@@ -28,4 +28,4 @@ def decode(a):
     return decoded_text
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=18013, debug=True)
+    app.run(host='0.0.0.0', port=10000, debug=True)
