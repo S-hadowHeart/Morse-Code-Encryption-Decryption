@@ -100,6 +100,19 @@
             padding: 10px 20px;
             border-radius: 5px;
         }
+        .profile-pic {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .round {
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+    }
     </style>
 </head>
 <body>
@@ -113,6 +126,14 @@
     </div>
 </form>
 
+<div class="profile-pic" onclick="openNewTab()">
+    <img src="https://s-hadowheart.carrd.co/assets/images/image01.jpg?v=91985b0d" alt="Profile Picture" class="round">
+  </div> 
     
 </body>
+<script>
+    function openNewTab() {
+  window.open('https://s-hadowheart.carrd.co', '_blank');
+}
+</script>
 </html>
