@@ -28,13 +28,13 @@ To run the application locally:
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/YourGitHubUsername/YourRepositoryName.git
+   git clone https://github.com/S-hadowHeart/Morse-Code-Encryption-Decryption.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd YourRepositoryName
+   cd Morse-Code-Encryption-Decryption
    ```
 
 3. Install the required dependencies:
