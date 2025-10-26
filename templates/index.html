@@ -6,96 +6,194 @@
     <title>Morse Code Decryptor</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-:root { --primary-color: #00ff00; --background-color: #0a0a0a; --container-bg: rgba(0, 255, 0, 0.05); --border-color: rgba(0, 255, 0, 0.2); --my-message-bg: rgba(0, 255, 0, 0.15); --other-message-bg: rgba(255, 255, 255, 0.1); }
-body { font-family: 'Roboto Mono', monospace; background-color: var(--background-color); color: var(--text-color); height: 100vh; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-.container { text-align: center; background-color: var(--container-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; }
-h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); }
-input, button, a.button-link { font-family: 'Roboto Mono', monospace; border: 1px solid var(--border-color); background-color: var(--container-bg); color: var(--primary-color); padding: 10px; border-radius: 5px; }
-#morse-container, #chat-login-container { display: block; }
-#chat-ui-container { display: none; flex-direction: column; height: 80vh; width:100%; }
-#chat-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; border-bottom: 1px solid var(--border-color); }
-#messages { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; }
-#messages::-webkit-scrollbar { width: 8px; }
-#messages::-webkit-scrollbar-track { background: transparent; }
-#messages::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
-.message-wrapper { display: flex; flex-direction: column; margin-bottom: 10px; }
-.message-wrapper.mine { align-items: flex-end; }
-.message-wrapper.other { align-items: flex-start; }
-.message { padding: 8px 12px; border-radius: 10px; max-width: 85%; word-wrap: break-word; position: relative; }
-.message.mine { background-color: var(--my-message-bg); }
-.message.other { background-color: var(--other-message-bg); }
-.message-actions { display: none; position: absolute; top: -15px; right: 10px; background: #333; border-radius: 10px; padding: 2px 5px; }
-.message:hover .message-actions { display: block; }
-.action-btn { background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 2px; }
-.reply-snippet { background: rgba(0,0,0,0.2); padding: 5px 8px; margin: 0 0 5px 0; border-radius: 5px; border-left: 2px solid var(--primary-color); cursor: pointer; text-align: left; }
-.reactions { display: flex; gap: 5px; margin-top: 5px; }
-.reaction { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; font-size: 0.8em; cursor: pointer; }
-.reaction.reacted { background: var(--primary-color); color: black; }
-#emoji-picker { display: none; position: absolute; background: #222; border: 1px solid var(--border-color); padding: 5px; border-radius: 5px; z-index: 100; }
-.emoji { cursor: pointer; font-size: 1.2em; padding: 2px; }
-#reply-preview { display: none; padding: 8px 15px; margin-top: 10px; border-top: 1px solid var(--border-color); text-align: left; position: relative; }
-#cancel-reply { position: absolute; top: 5px; right: 5px; background: none; border: none; color: white; cursor: pointer; font-size: 16px; }
-#message-form { display: flex; padding-top: 10px; }
+        :root {
+            --primary-color: #00ff00;
+            --background-color: #0a0a0a;
+            --container-bg: rgba(0, 255, 0, 0.05);
+            --border-color: rgba(0, 255, 0, 0.2);
+            --shadow-color: rgba(0, 255, 0, 0.5);
+            --text-color: #e5e5e5;
+            --my-message-bg: rgba(0, 255, 0, 0.15);
+            --other-message-bg: rgba(255, 255, 255, 0.1);
+        }
+        body.secret-agent-mode {
+            --primary-color: #ff0000;
+            --background-color: #000;
+            --container-bg: rgba(255, 0, 0, 0.05);
+            --border-color: rgba(255, 0, 0, 0.3);
+            --shadow-color: rgba(255, 0, 0, 0.6);
+            --my-message-bg: rgba(255, 0, 0, 0.15);
+        }
+        body { font-family: 'Roboto Mono', monospace; background-color: var(--background-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; text-shadow: 0 0 5px var(--shadow-color); transition: all 0.5s; }
+        #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .container { text-align: center; background-color: var(--container-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color); box-shadow: 0 0 30px var(--shadow-color); width: 90%; max-width: 700px; position: relative; transition: all 0.5s; }
+        h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); }
+        input, button, a.button-link { font-family: 'Roboto Mono', monospace; border: 1px solid var(--border-color); background-color: var(--container-bg); color: var(--primary-color); padding: 10px; margin: 5px; border-radius: 5px; transition: all 0.5s; }
+        button, a.button-link { cursor: pointer; font-family: 'Orbitron', sans-serif; text-decoration: none; }
+        button:hover, a.button-link:hover { background-color: var(--primary-color); color: var(--background-color); }
+        #morse-container, #chat-login-container { display: block; }
+        #chat-ui-container { display: none; flex-direction: column; height: 80vh; width:100%; }
+        #result-display { margin-top: 20px; min-height: 24px; font-size: 1.1em; color: var(--primary-color); word-wrap: break-word; }
+        #chat-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; border-bottom: 1px solid var(--border-color); }
+        #messages { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; margin: 10px 0; }
+        #messages::-webkit-scrollbar { width: 8px; }
+        #messages::-webkit-scrollbar-track { background: transparent; }
+        #messages::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
+        .message-wrapper { display: flex; flex-direction: column; margin-bottom: 10px; }
+        .message-wrapper.mine { align-items: flex-end; }
+        .message-wrapper.other { align-items: flex-start; }
+        .message { padding: 8px 12px; border-radius: 10px; max-width: 85%; word-wrap: break-word; position: relative; opacity: 0; animation: glitchIn 0.4s forwards; text-align: left; }
+        @keyframes glitchIn { 0% { opacity: 0; transform: translate(-3px, 3px) skewX(5deg); } 100% { opacity: 1; transform: translate(0, 0) skewX(0); } }
+        .message.mine { background-color: var(--my-message-bg); }
+        .message.other { background-color: var(--other-message-bg); }
+        .message-actions { display: none; position: absolute; top: -15px; right: 10px; background: #333; border-radius: 10px; padding: 2px 5px; z-index: 10; }
+        .message:hover .message-actions { display: block; }
+        .action-btn { background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 2px; }
+        .reply-snippet { background: rgba(0,0,0,0.2); padding: 5px 8px; margin: 0 0 5px 0; border-radius: 5px; border-left: 2px solid var(--primary-color); cursor: pointer; }
+        .message img, .message video { max-width: 250px; border-radius: 5px; cursor: pointer; margin-top: 5px; }
+        .reactions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .reaction { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; font-size: 0.8em; cursor: pointer; }
+        .reaction.reacted { background: var(--primary-color); color: black; }
+        #emoji-picker { display: none; position: fixed; background: #222; border: 1px solid var(--border-color); padding: 5px; border-radius: 5px; z-index: 100; }
+        .emoji { cursor: pointer; font-size: 1.2em; padding: 2px; }
+        #reply-preview { display: none; padding: 8px 15px; margin-top: 10px; border-top: 1px solid var(--border-color); text-align: left; position: relative; }
+        #cancel-reply { position: absolute; top: 5px; right: 5px; background: none; border: none; color: white; cursor: pointer; font-size: 16px; }
+        #message-form { display: flex; }
+        #message-input { flex-grow: 1; }
+        #typing-indicator { height: 20px; padding-left: 15px; font-style: italic; color: var(--primary-color); opacity: 0; transition: opacity 0.5s; text-align: left; }
+        #lightbox { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); }
+        body.secret-agent-mode #lightbox { background-color: rgba(255, 0, 0, 0.3); }
+        #lightbox-container { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+        #lightbox-container > * { max-width: 90%; max-height: 90%; }
+        #lightbox-close { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; cursor: pointer; }
     </style>
 </head>
 <body>
+    <canvas id="matrix-canvas"></canvas>
     <div class="container" id="main-container">
         <div id="morse-container">
             <h1>Morse Code Decryptor</h1>
-            <p>Type 'enter chat' to access the secure messenger.</p>
-            <form id="code-form"><input type="text" id="textInput" placeholder="Input sequence..." autocomplete="off"></form>
+            <p>Type 'enter chat' to access the secure messenger, or 'guide' for help.</p>
+            <form id="code-form"><input type="text" id="textInput" placeholder="Input sequence..." autocomplete="off"><button type="submit">Execute</button></form>
+            <p id="result-display"></p>
         </div>
         <div id="chat-login-container" style="display:none;">
             <h1>Secure Chat</h1>
             <button id="create-room">Create Room</button>
             <input type="text" id="room-code-input" placeholder="Enter Room Code...">
             <button id="join-room">Join</button>
-             <button id="back-to-morse">Back</button>
+            <button id="back-to-morse">Back</button>
         </div>
         <div id="chat-ui-container">
             <div id="chat-header"><span id="room-display"></span><button id="leave-room">Leave</button></div>
             <div id="messages"></div>
+            <div id="typing-indicator"></div>
             <div id="reply-preview"><p>Replying to <b id="reply-agent"></b></p><span id="reply-text"></span><button id="cancel-reply">X</button></div>
-            <form id="message-form"><input type="text" id="message-input" placeholder="Send a message..."><button type="submit">Send</button></form>
+            <form id="message-form">
+                <button type="button" id="attach-file-button">+</button>
+                <input type="file" id="file-input" style="display: none;" accept="image/*,video/*">
+                <input type="text" id="message-input" placeholder="Send a message...">
+                <button type="submit">Send</button>
+            </form>
         </div>
     </div>
+    <div id="lightbox"><span id="lightbox-close">&times;</span><div id="lightbox-container"></div></div>
     <div id="emoji-picker"></div>
+
 <script>
-let currentRoom = null, agentName = null, chatInterval = null, replyingToMessageId = null;
-let messagesData = [];
-const morseContainer = document.getElementById('morse-container'), chatLoginContainer = document.getElementById('chat-login-container'), chatUiContainer = document.getElementById('chat-ui-container');
-const messagesDiv = document.getElementById('messages'), messageForm = document.getElementById('message-form'), messageInput = document.getElementById('message-input'), replyPreview = document.getElementById('reply-preview'), emojiPicker = document.getElementById('emoji-picker');
-const availableEmojis = ['👍', '❤️', '😂', '😯', '😢', '😡'];
+// --- Global State & DOM References ---
+var currentRoom=null, agentName=null, chatInterval=null, replyingToMessageId=null, typingTimeout=null, messagesData=[];
+var morseContainer=document.getElementById('morse-container'), chatLoginContainer=document.getElementById('chat-login-container'), chatUiContainer=document.getElementById('chat-ui-container');
+var resultDisplay = document.getElementById('result-display');
+var messagesDiv=document.getElementById('messages'), messageForm=document.getElementById('message-form'), messageInput=document.getElementById('message-input'), replyPreview=document.getElementById('reply-preview'), emojiPicker=document.getElementById('emoji-picker');
+var lightbox=document.getElementById('lightbox'), lightboxContainer=document.getElementById('lightbox-container'), lightboxClose=document.getElementById('lightbox-close');
+var availableEmojis=['👍', '❤️', '😂', '😯', '😢', '😡'];
 
-function showView(view) { [morseContainer, chatLoginContainer, chatUiContainer].forEach(c => c.style.display = 'none'); view.style.display = view === chatUiContainer ? 'flex' : 'block'; }
-document.getElementById('code-form').addEventListener('submit', function(e) { e.preventDefault(); if (document.getElementById('textInput').value.toLowerCase() === 'enter chat') { showView(chatLoginContainer); } });
-document.getElementById('back-to-morse').addEventListener('click', () => showView(morseContainer));
-document.getElementById('create-room').addEventListener('click', () => { fetch('/chat/create', { method: 'POST' }).then(res => res.json()).then(data => { if(data.status==='success') startChatSession(data.room_code, data.agent_name); }); });
-document.getElementById('join-room').addEventListener('click', () => { const roomCode = document.getElementById('room-code-input').value; if(roomCode) { const fd = new FormData(); fd.append('room_code', roomCode); fetch('/chat/join', { method: 'POST', body: fd }).then(res => res.json()).then(data => { if(data.status==='success') startChatSession(roomCode, data.agent_name); }); } });
-document.getElementById('leave-room').addEventListener('click', () => { clearInterval(chatInterval); showView(chatLoginContainer); });
-messageForm.addEventListener('submit', function(e) { e.preventDefault(); const text = messageInput.value.trim(); if (!text) return; const fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); fd.append('message', text); if (replyingToMessageId) { fd.append('reply_to', replyingToMessageId); } fetch('/chat/send', { method: 'POST', body: fd }).then(() => { messageInput.value = ''; cancelReplyMode(); loadMessages(true); }); });
-document.getElementById('cancel-reply').addEventListener('click', cancelReplyMode);
+// --- View & Command Handling ---
+function showView(view) { [morseContainer, chatLoginContainer, chatUiContainer].forEach(function(c){ c.style.display='none'; }); view.style.display = view === chatUiContainer ? 'flex' : 'block'; }
+document.getElementById('code-form').addEventListener('submit', function(e) { 
+    e.preventDefault();
+    var textInput = document.getElementById('textInput');
+    var input = textInput.value.trim();
+    if (!input) return;
+    var lowerInput = input.toLowerCase();
+    if (lowerInput === 'enter chat') { showView(chatLoginContainer); textInput.value = ''; resultDisplay.innerHTML = ''; }
+    else if (lowerInput === 'guide') { window.location.href = '/guide'; }
+    else {
+        var formData = new FormData();
+        formData.append('textInput', input);
+        fetch('/code', { method: 'POST', body: formData })
+            .then(function(res){ return res.json(); })
+            .then(function(data){ resultDisplay.textContent = data.status === 'success' ? data.result : data.message; })
+            .catch(function(){ resultDisplay.textContent = 'Error: Could not connect to system.'; });
+    }
+});
+document.getElementById('back-to-morse').addEventListener('click', function(){ showView(morseContainer); });
 
-function startChatSession(room, agent) { currentRoom = room; agentName = agent; document.getElementById('room-display').textContent = `Room: ${room}`; showView(chatUiContainer); loadMessages(); chatInterval = setInterval(loadMessages, 3000); }
-function loadMessages(forceScroll = false) { if (!currentRoom) return; fetch(`/chat/messages?room_code=${currentRoom}&agent_name=${agentName}`).then(res => res.json()).then(data => { if (data.status !== 'success') return; messagesData = data.messages; const shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30); messagesDiv.innerHTML = ''; messagesData.forEach(msg => messagesDiv.appendChild(createMessageElement(msg))); if (shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight; }); }
-function createMessageElement(msg) {
-    const wrapper = document.createElement('div'); wrapper.id = `msg-${msg.id}`; wrapper.className = `message-wrapper ${msg.agent === agentName ? 'mine' : 'other'}`;
-    const messageEl = document.createElement('div'); messageEl.className = `message ${msg.agent === agentName ? 'mine' : 'other'}`;
-    if (msg.reply_to) { const originalMsg = messagesData.find(m => m.id === msg.reply_to); if (originalMsg) { const snippet = document.createElement('div'); snippet.className = 'reply-snippet'; snippet.innerHTML = `<p><strong>${originalMsg.agent}</strong></p><p>${getSnippetText(originalMsg.text)}</p>`; snippet.onclick = () => document.getElementById(`msg-${msg.reply_to}`).scrollIntoView({ behavior: 'smooth' }); messageEl.appendChild(snippet); } }
-    const textEl = document.createElement('span'); textEl.textContent = msg.text; messageEl.appendChild(textEl);
-    const actions = document.createElement('div'); actions.className = 'message-actions';
-    const replyBtn = document.createElement('button'); replyBtn.innerHTML = '↪️'; replyBtn.className = 'action-btn'; replyBtn.onclick = () => setReplyMode(msg.id); actions.appendChild(replyBtn);
-    const reactBtn = document.createElement('button'); reactBtn.innerHTML = '😊'; reactBtn.className = 'action-btn'; reactBtn.onclick = (e) => showEmojiPicker(msg.id, e); actions.appendChild(reactBtn);
-    messageEl.appendChild(actions);
-    if (msg.reactions && Object.keys(msg.reactions).length > 0) { const reactionsEl = document.createElement('div'); reactionsEl.className = 'reactions'; for (const [emoji, agents] of Object.entries(msg.reactions)) { const reaction = document.createElement('span'); reaction.className = `reaction ${agents.includes(agentName) ? 'reacted' : ''}`; reaction.textContent = `${emoji} ${agents.length}`; reaction.onclick = () => sendReaction(msg.id, emoji); reactionsEl.appendChild(reaction); } messageEl.appendChild(reactionsEl); }
-    wrapper.appendChild(messageEl); return wrapper;
-}
-function setReplyMode(messageId) { const message = messagesData.find(m => m.id === messageId); if (!message) return; replyingToMessageId = messageId; document.getElementById('reply-agent').textContent = message.agent; document.getElementById('reply-text').textContent = getSnippetText(message.text); replyPreview.style.display = 'block'; messageInput.focus(); }
+// --- Konami Code ---
+var konamiCode=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+var konamiIndex=0;
+window.addEventListener('keydown', function(e) {
+    if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
+        konamiIndex++;
+        if (konamiIndex === konamiCode.length) { document.body.classList.toggle('secret-agent-mode'); konamiIndex = 0; }
+    } else { konamiIndex = 0; }
+});
+
+// --- Chat Initialization & Core Logic ---
+document.getElementById('create-room').addEventListener('click', function(){ fetch('/chat/create', { method: 'POST' }).then(function(res){ return res.json(); }).then(function(data){ if(data.status==='success') startChatSession(data.room_code, data.agent_name); }); });
+document.getElementById('join-room').addEventListener('click', function(){ var roomCode = document.getElementById('room-code-input').value; if(roomCode) { var fd = new FormData(); fd.append('room_code', roomCode); fetch('/chat/join', { method: 'POST', body: fd }).then(function(res){ return res.json(); }).then(function(data){ if(data.status==='success') startChatSession(roomCode, data.agent_name); else alert(data.message); }); } });
+document.getElementById('leave-room').addEventListener('click', function(){ clearInterval(chatInterval); showView(chatLoginContainer); currentRoom = null; agentName = null; });
+function startChatSession(room, agent) { currentRoom = room; agentName = agent; document.getElementById('room-display').textContent = 'Room: ' + room; showView(chatUiContainer); loadMessages(true); if (chatInterval) clearInterval(chatInterval); chatInterval = setInterval(loadMessages, 2500); }
+function loadMessages(forceScroll){ if (forceScroll===undefined) forceScroll=false; if (!currentRoom) return; fetch('/chat/messages?room_code=' + currentRoom + '&agent_name=' + agentName).then(function(res){ return res.json(); }).then(function(data){ if (data.status !== 'success') return; messagesData = data.messages; var shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30); messagesDiv.innerHTML = ''; messagesData.forEach(function(msg){ messagesDiv.appendChild(createMessageElement(msg)); }); if (shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight; updateTypingIndicator(data.typing_agents || []); }); }
+
+// --- Message Creation & Interaction ---
+messageForm.addEventListener('submit', function(e) { e.preventDefault(); var text = messageInput.value.trim(); var file = document.getElementById('file-input').files[0]; if (!text && !file) return; var fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); if(text) fd.append('message', text); if (replyingToMessageId) fd.append('reply_to', replyingToMessageId); if(file) fd.append('file', file); fetch('/chat/send', { method: 'POST', body: fd }).then(function(){ messageInput.value = ''; document.getElementById('file-input').value = ''; cancelReplyMode(); loadMessages(true); sendTypingStatus(false); clearTimeout(typingTimeout); }); });
+function createMessageElement(msg) { var wrapper = document.createElement('div'); wrapper.id = 'msg-' + msg.id; wrapper.className = 'message-wrapper ' + (msg.agent === agentName ? 'mine' : 'other'); var messageEl = document.createElement('div'); messageEl.className = 'message ' + (msg.agent === agentName ? 'mine' : 'other'); if (msg.reply_to) { var originalMsg = messagesData.find(function(m){ return m.id === msg.reply_to; }); if (originalMsg) { var snippet = document.createElement('div'); snippet.className = 'reply-snippet'; snippet.innerHTML = '<p><strong>' + originalMsg.agent + '</strong></p><p>' + getSnippetText(originalMsg.text) + '</p>'; snippet.onclick = function(){ var el = document.getElementById('msg-' + msg.reply_to); if (el) el.scrollIntoView({ behavior: 'smooth' }); }; messageEl.appendChild(snippet); } } if (msg.text && msg.text.indexOf('[IMAGE]') === 0) { var url = msg.text.substring(7); var img = document.createElement('img'); img.src = url; img.onclick = function(){ openLightbox('image', url); }; messageEl.appendChild(img); } else if (msg.text && msg.text.indexOf('[VIDEO]') === 0) { var url = msg.text.substring(7); var video = document.createElement('video'); video.src = url; video.onclick = function(){ openLightbox('video', url); }; messageEl.appendChild(video); } else { var textEl = document.createElement('span'); textEl.textContent = msg.text; messageEl.appendChild(textEl); } var actions = document.createElement('div'); actions.className = 'message-actions'; var replyBtn = document.createElement('button'); replyBtn.innerHTML = '↪️'; replyBtn.className = 'action-btn'; replyBtn.onclick = function(){ setReplyMode(msg.id); }; actions.appendChild(replyBtn); var reactBtn = document.createElement('button'); reactBtn.innerHTML = '😊'; reactBtn.className = 'action-btn'; reactBtn.onclick = function(e){ showEmojiPicker(msg.id, e); }; actions.appendChild(reactBtn); messageEl.appendChild(actions); if (msg.reactions && Object.keys(msg.reactions).length > 0) { var reactionsEl = document.createElement('div'); reactionsEl.className = 'reactions'; Object.keys(msg.reactions).forEach(function(emoji){ var agents = msg.reactions[emoji] || []; var reaction = document.createElement('span'); reaction.className = 'reaction ' + (agents.indexOf(agentName) !== -1 ? 'reacted' : ''); reaction.textContent = emoji + ' ' + agents.length; reaction.onclick = function(){ sendReaction(msg.id, emoji); }; reactionsEl.appendChild(reaction); }); messageEl.appendChild(reactionsEl); } wrapper.appendChild(messageEl); return wrapper; }
+
+// --- Feature Logic (Replies, Reactions, Typing, Files) ---
+function setReplyMode(messageId) { var message = messagesData.find(function(m){ return m.id === messageId; }); if (!message) return; replyingToMessageId = messageId; document.getElementById('reply-agent').textContent = message.agent; document.getElementById('reply-text').textContent = getSnippetText(message.text); replyPreview.style.display = 'block'; messageInput.focus(); }
 function cancelReplyMode() { replyingToMessageId = null; replyPreview.style.display = 'none'; }
-function showEmojiPicker(messageId, event) { emojiPicker.innerHTML = ''; availableEmojis.forEach(emoji => { const emojiEl = document.createElement('span'); emojiEl.className = 'emoji'; emojiEl.textContent = emoji; emojiEl.onclick = () => { sendReaction(messageId, emoji); emojiPicker.style.display = 'none'; }; emojiPicker.appendChild(emojiEl); }); const rect = event.target.getBoundingClientRect(); emojiPicker.style.left = `${rect.left}px`; emojiPicker.style.top = `${rect.top - 35}px`; emojiPicker.style.display = 'block'; }
-function sendReaction(messageId, emoji) { const fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); fd.append('message_id', messageId); fd.append('emoji', emoji); fetch('/chat/react', { method: 'POST', body: fd }).then(() => loadMessages()); }
-function getSnippetText(text) { if (text.startsWith('[IMAGE]')) return 'Image'; if (text.startsWith('[VIDEO]')) return 'Video'; return text.length > 50 ? text.substring(0, 50) + '...' : text; }
-window.addEventListener('click', (e) => { if (!emojiPicker.contains(e.target) && !e.target.matches('.action-btn')) emojiPicker.style.display = 'none'; });
+function showEmojiPicker(messageId, event) { emojiPicker.innerHTML = ''; availableEmojis.forEach(function(emoji){ var emojiEl = document.createElement('span'); emojiEl.className = 'emoji'; emojiEl.textContent = emoji; emojiEl.onclick = function(e){ e.stopPropagation(); sendReaction(messageId, emoji); emojiPicker.style.display = 'none'; }; emojiPicker.appendChild(emojiEl); }); var rect = event.target.getBoundingClientRect(); emojiPicker.style.display = 'block'; emojiPicker.style.left = rect.left + 'px'; emojiPicker.style.top = (rect.top - emojiPicker.offsetHeight - 5) + 'px'; }
+function sendReaction(messageId, emoji) { var fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); fd.append('message_id', messageId); fd.append('emoji', emoji); fetch('/chat/react', { method: 'POST', body: fd }).then(function(){ loadMessages(); }); }
+document.getElementById('attach-file-button').addEventListener('click', function(){ document.getElementById('file-input').click(); });
+messageInput.addEventListener('input', function(){ clearTimeout(typingTimeout); sendTypingStatus(true); typingTimeout = setTimeout(function(){ sendTypingStatus(false); }, 2000); });
+function sendTypingStatus(isTyping) { if (!currentRoom) return; var fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); fd.append('is_typing', isTyping); fetch('/chat/typing', { method: 'POST', body: fd }); }
+function updateTypingIndicator(typingAgents) { var indicator = document.getElementById('typing-indicator'); if (typingAgents && typingAgents.length > 0) { indicator.textContent = typingAgents.join(', ') + ' is typing...'; indicator.style.opacity = 1; } else { indicator.style.opacity = 0; } }
+
+// --- Utility Functions ---
+function getSnippetText(text) { if (!text) return ''; if (text.indexOf('[IMAGE]') === 0) return 'Image'; if (text.indexOf('[VIDEO]') === 0) return 'Video'; return text.length > 50 ? text.substring(0, 50) + '...' : text; }
+function openLightbox(type, url) { lightboxContainer.innerHTML = ''; var element; if (type === 'image') { element = document.createElement('img'); element.src = url; } else if (type === 'video') { element = document.createElement('video'); element.src = url; element.autoplay = true; element.controls = true; } if(element) lightboxContainer.appendChild(element); lightbox.style.display = 'block'; }
+lightboxClose.onclick = function(){ lightbox.style.display = 'none'; };
+window.addEventListener('click', function(e){ if (e.target == lightbox) lightbox.style.display = 'none'; if (emojiPicker.style.display === 'block' && !emojiPicker.contains(e.target) && !e.target.matches('.action-btn')) emojiPicker.style.display = 'none'; });
+
+// --- Matrix Background ---
+var canvas = document.getElementById('matrix-canvas'); var ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+// removed raw backtick character from letters to avoid parser issues in some environments
+var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|]}' .split('');
+var fontSize = 10, columns = canvas.width / fontSize;
+var drops = Array(Math.floor(columns)).fill(1);
+function drawMatrix() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    var themeColor = getComputedStyle(document.body).getPropertyValue('--primary-color');
+    ctx.fillStyle = themeColor;
+    ctx.font = fontSize + 'px monospace';
+    for (var i = 0; i < drops.length; i++) {
+        var text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+    }
+}
+setInterval(drawMatrix, 33);
+window.addEventListener('resize', function(){
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    columns = canvas.width / fontSize;
+    drops = Array(Math.floor(columns)).fill(1);
+});
+
+// --- Initial Load ---
 showView(morseContainer);
 </script>
 </body>
