@@ -123,7 +123,7 @@
             cursor: not-allowed;
         }
 
-        button {
+        button, a.button-link {
             font-family: 'Orbitron', sans-serif;
             background-color: transparent;
             color: var(--primary-color);
@@ -135,9 +135,11 @@
             font-size: 1rem;
             margin: 5px;
             text-shadow: 0 0 5px var(--primary-color);
+            text-decoration: none;
+            display: inline-block;
         }
 
-        button:hover:not(:disabled) {
+        button:hover:not(:disabled), a.button-link:hover {
             background-color: var(--primary-color);
             color: var(--background-color);
             box-shadow: 0 0 20px var(--shadow-color);
@@ -283,8 +285,9 @@
             <h1 id="main-title">Morse Code Decryptor</h1>
             <p id="subtitle">Engage the system. Encrypt or decrypt transmissions.</p>
             <form id="code-form">
-                <input type="text" id="textInput" name="textInput" placeholder="[Input sequence...]" autocomplete="off">
+                <input type="text" id="textInput" name="textInput" placeholder="[Input sequence... or type 'help']" autocomplete="off">
                 <button type="submit">Execute</button>
+                <a href="/guide" class="button-link">Guide</a>
             </form>
             <div id="result-container" style="display: none;">
                 <div class="output" id="output"></div>
@@ -367,25 +370,28 @@
     document.getElementById('code-form').addEventListener('submit', function(event) {
         event.preventDefault();
         const textInput = document.getElementById('textInput');
-        const text = textInput.value.trim().toLowerCase();
+        const text = textInput.value.trim();
+        const lowerCaseText = text.toLowerCase();
         
-        if (text === 'enter chat') {
+        if (lowerCaseText === 'enter chat') {
             showView(chatLoginContainer);
             textInput.value = '';
             return;
         }
 
-        if (text === 'help' || text === 'guide') {
+        if (lowerCaseText === 'help' || lowerCaseText === 'guide') {
             window.location.href = '/guide';
-            textInput.value = '';
             return;
         }
 
         const submitBtn = this.querySelector('button[type="submit"]');
+        const formData = new FormData();
+        formData.append('textInput', text);
+
         textInput.disabled = true;
         submitBtn.disabled = true;
 
-        fetch('/code', { method: 'POST', body: new FormData(event.target) })
+        fetch('/code', { method: 'POST', body: formData })
         .then(response => response.json())
         .then(data => {
             const outputDiv = document.getElementById('output');
@@ -502,8 +508,9 @@
         if (isRequestPending) return;
         const messageInput = document.getElementById('message-input');
         let message = messageInput.value.trim();
+        const lowerCaseMessage = message.toLowerCase();
 
-        if (message.startsWith('/encrypt ')) {
+        if (lowerCaseMessage.startsWith('/encrypt ')) {
             const plainText = message.substring(9);
             message = `[ENCRYPTED]${btoa(plainText)}`;
         }
@@ -524,7 +531,7 @@
             .then(data => {
                 if (data.status === 'success') {
                     messageInput.value = '';
-                    loadMessages(true); // Scroll to bottom after sending
+                    loadMessages(true); 
                 }
             })
             .catch(error => console.error('Error:', error))
@@ -559,13 +566,12 @@
                     });
                     displayedMessagesCount = data.messages.length;
                 } else if (data.messages.length < displayedMessagesCount) {
-                    // Full redraw if messages were deleted (or for robustness)
                     messagesDiv.innerHTML = '';
                     data.messages.forEach(msg => {
                         const messageEl = createMessageElement(msg);
                         messagesDiv.appendChild(messageEl);
                     });
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    if(shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight;
                     displayedMessagesCount = data.messages.length;
                 }
             }
@@ -584,10 +590,11 @@
         textEl.className = 'text';
         
         if (msg.text.startsWith('[ENCRYPTED]')) {
-            textEl.textContent = msg.text.substring(11);
+            const encryptedData = msg.text.substring(11);
+            textEl.textContent = encryptedData;
             textEl.classList.add('encrypted');
             try {
-                const decryptedText = atob(textEl.textContent);
+                const decryptedText = atob(encryptedData);
                 messageEl.addEventListener('click', () => {
                     textEl.textContent = decryptedText;
                     textEl.classList.remove('encrypted');
@@ -610,6 +617,9 @@
     let konamiIndex = 0;
     document.addEventListener('keydown', (e) => {
         if (document.body.classList.contains('secret-agent')) return;
+        // Ignore key presses if an input field is focused
+        if (e.target.tagName.toLowerCase() === 'input') return;
+
         if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
             konamiIndex++;
             if (konamiIndex === konamiCode.length) {
