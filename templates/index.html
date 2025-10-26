@@ -21,10 +21,12 @@
         .container {
             text-align: center;
             background-color: rgba(255, 255, 255, 0.9);
-            padding: 40px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
             animation: slideInDown 0.5s ease forwards;
+            width: 90%;
+            max-width: 500px;
         }
 
         @keyframes slideInDown {
@@ -41,7 +43,7 @@
         h1 {
             color: #fff;
             margin-bottom: 20px;
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-family: 'Comic Sans MS', cursive;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
@@ -49,7 +51,7 @@
         p {
             color: #fff;
             margin-bottom: 30px;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: 500;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
@@ -64,7 +66,7 @@
             background-color: rgba(255, 255, 255, 0.8);
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             transition: box-shadow 0.3s ease;
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: #333;
             font-family: 'Arial', sans-serif;
         }
@@ -77,14 +79,15 @@
         button {
             background-color: #fff;
             color: #5c258d;
-            padding: 15px 30px;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-family: 'Comic Sans MS', cursive;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            margin: 5px;
         }
 
         button:hover {
@@ -95,10 +98,12 @@
             margin-top: 20px;
             font-weight: bold;
             color: #5c258d;
-            font-size: 1.6rem;
+            font-size: 1.2rem;
             background-color: #fff;
-            padding: 10px 20px;
+            padding: 10px;
             border-radius: 5px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
         }
         .profile-pic {
       position: fixed;
@@ -123,6 +128,9 @@
         <input type="text" id="textInput" name="textInput" placeholder="Enter Morse code or text">
         <button id="submit">Decode/Encode</button>
         <div class="output" id="output">{{ result }}</div>
+        {% if result %}
+        <button onclick="copyToClipboard()">Copy</button>
+        {% endif %}
     </div>
 </form>
 
@@ -134,6 +142,17 @@
 <script>
     function openNewTab() {
   window.open('https://s-hadowheart.carrd.co', '_blank');
+}
+
+function copyToClipboard() {
+    const output = document.getElementById("output");
+    const range = document.createRange();
+    range.selectNode(output);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand("copy");
+    window.getSelection().removeAllRanges();
+    alert("Copied to clipboard!");
 }
 </script>
 </html>
