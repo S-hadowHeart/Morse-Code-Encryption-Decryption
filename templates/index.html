@@ -3,156 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Morse Code Encryption & Decryption</title>
+    <title>Morse Code Decryptor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #00ff00;
+            --background-color: #0a0a0a;
+            --container-bg: rgba(0, 255, 0, 0.05);
+            --border-color: rgba(0, 255, 0, 0.2);
+            --shadow-color: rgba(0, 255, 0, 0.5);
+            --text-color: #e5e5e5;
+            --error-color: #ff4d4d;
+        }
+
+        body.secret-agent {
+            --primary-color: #ff0000;
+            --shadow-color: rgba(255, 0, 0, 0.5);
+            --container-bg: rgba(255, 0, 0, 0.05);
+            --border-color: rgba(255, 0, 0, 0.2);
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #5c258d;
-            background-image: radial-gradient(circle at top right, #5c258d, #4389a2);
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--background-color);
+            color: var(--text-color);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            color: #333;
             overflow: hidden;
+            text-shadow: 0 0 5px var(--shadow-color);
+            transition: all 0.5s ease;
+        }
+
+        #matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
         }
 
         .container {
             text-align: center;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-            animation: slideInDown 0.5s ease forwards;
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 30px var(--shadow-color);
+            animation: fadeIn 1s ease-in-out;
             width: 90%;
-            max-width: 500px;
+            max-width: 600px;
+            position: relative;
         }
 
-        @keyframes slideInDown {
-            0% {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            100% {
-                transform: translateY(0);
-                opacity: 1;
-            }
+        .container::before, .container::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--primary-color);
+            border-style: solid;
+            animation: flicker 1.5s infinite alternate;
+        }
+
+        .container::before {
+            top: -5px;
+            left: -5px;
+            border-width: 2px 0 0 2px;
+        }
+
+        .container::after {
+            bottom: -5px;
+            right: -5px;
+            border-width: 0 2px 2px 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         h1 {
-            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary-color);
             margin-bottom: 20px;
             font-size: 2.5rem;
-            font-family: 'Comic Sans MS', cursive;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: flicker 1.5s infinite alternate, glitch 5s linear infinite;
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow:
+                0 0 4px var(--primary-color),
+                0 0 11px var(--primary-color),
+                0 0 19px var(--primary-color),
+                0 0 40px var(--shadow-color),
+                0 0 80px var(--shadow-color);
+            }
+            20%, 24%, 55% { text-shadow: none; }    
+        }
+
+        @keyframes glitch {
+            2%,64%{ transform: translate(2px,0) skew(0deg); }
+            4%,60%{ transform: translate(-2px,0) skew(0deg); }
+            62%{ transform: translate(0,0) skew(5deg); }
         }
 
         p {
-            color: #fff;
+            color: var(--text-color);
             margin-bottom: 30px;
             font-size: 1rem;
-            font-weight: 500;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
 
         input[type="text"] {
-            padding: 10px;
+            font-family: 'Roboto Mono', monospace;
+            padding: 15px;
             margin-bottom: 20px;
             width: 100%;
             box-sizing: border-box;
-            border: none;
+            border: 1px solid var(--border-color);
             border-radius: 5px;
-            background-color: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            transition: box-shadow 0.3s ease;
+            background-color: var(--container-bg);
+            color: var(--primary-color);
             font-size: 1rem;
-            color: #333;
-            font-family: 'Arial', sans-serif;
+            text-shadow: 0 0 3px var(--primary-color);
+            transition: all 0.3s ease;
         }
 
         input[type="text"]:focus {
             outline: none;
-            box-shadow: 0 0 15px rgba(92, 37, 141, 0.8);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px var(--shadow-color);
         }
 
         button {
-            background-color: #fff;
-            color: #5c258d;
+            font-family: 'Orbitron', sans-serif;
+            background-color: transparent;
+            color: var(--primary-color);
             padding: 10px 20px;
-            border: none;
+            border: 1px solid var(--primary-color);
             border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
             font-size: 1rem;
-            font-family: 'Comic Sans MS', cursive;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             margin: 5px;
+            text-shadow: 0 0 5px var(--primary-color);
         }
 
         button:hover {
-            background-color: #e0e0e0;
+            background-color: var(--primary-color);
+            color: var(--background-color);
+            box-shadow: 0 0 20px var(--shadow-color);
         }
 
         .output {
             margin-top: 20px;
             font-weight: bold;
-            color: #5c258d;
+            color: var(--primary-color);
             font-size: 1.2rem;
-            background-color: #fff;
-            padding: 10px;
+            background-color: var(--container-bg);
+            padding: 15px;
             border-radius: 5px;
+            border: 1px solid var(--border-color);
             word-wrap: break-word;
             white-space: pre-wrap;
+            min-height: 50px;
+            animation: fadeInOutput 0.5s ease-in-out;
         }
-        .profile-pic {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      cursor: pointer;
-      z-index: 1000;
-    }
+        
+        .output.error {
+            color: var(--error-color);
+            text-shadow: 0 0 5px var(--error-color);
+            border-color: rgba(255, 77, 77, 0.4);
+        }
 
-    .round {
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-    }
+        @keyframes fadeInOutput {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
-    <form action="/code" method="POST">
-    <div class="container">
-        <h1>Morse Code Fun</h1>
-        <p>Decode secret messages or create your own!</p>
-        <input type="text" id="textInput" name="textInput" placeholder="Enter Morse code or text">
-        <button id="submit">Decode/Encode</button>
-        <div class="output" id="output">{{ result }}</div>
-        {% if result %}
-        <button onclick="copyToClipboard()">Copy</button>
-        {% endif %}
-    </div>
-</form>
-
-<div class="profile-pic" onclick="openNewTab()">
-    <img src="https://s-hadowheart.carrd.co/assets/images/image01.jpg?v=91985b0d" alt="Profile Picture" class="round">
-  </div> 
+    <canvas id="matrix-canvas"></canvas>
+    <form id="code-form">
+        <div class="container">
+            <h1 id="main-title">Morse Code Decryptor</h1>
+            <p id="subtitle">Engage the system. Encrypt or decrypt transmissions.</p>
+            <input type="text" id="textInput" name="textInput" placeholder="[Input sequence...]" autocomplete="off" aria-label="Input for Morse Code or Text">
+            <button type="submit" id="submit">Execute</button>
+            <div id="result-container" style="display: none;" role="region" aria-live="polite">
+                 <div class="output" id="output"></div>
+                 <button type="button" id="copy-button" onclick="copyToClipboard()">Copy Output</button>
+            </div>
+        </div>
+    </form>
     
-</body>
 <script>
-    function openNewTab() {
-  window.open('https://s-hadowheart.carrd.co', '_blank');
-}
+    // Matrix Rain Effect
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
 
-function copyToClipboard() {
-    const output = document.getElementById("output");
-    const range = document.createRange();
-    range.selectNode(output);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    document.execCommand("copy");
-    window.getSelection().removeAllRanges();
-    alert("Copied to clipboard!");
-}
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+    let latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let nums = '0123456789';
+    let alphabet = katakana + latin + nums;
+
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const rainDrops = [];
+
+    for (let x = 0; x < columns; x++) {
+        rainDrops[x] = 1;
+    }
+
+    let matrixPrimaryColor = '#00ff00';
+
+    const draw = () => {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = matrixPrimaryColor;
+        ctx.font = fontSize + 'px monospace';
+
+        for (let i = 0; i < rainDrops.length; i++) {
+            const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+            ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+
+            if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                rainDrops[i] = 0;
+            }
+            rainDrops[i]++;
+        }
+    };
+
+    let matrixInterval = setInterval(draw, 33);
+
+    // Form Submission
+    document.getElementById('code-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const textInput = document.getElementById('textInput');
+        const outputDiv = document.getElementById('output');
+        const resultContainer = document.getElementById('result-container');
+        const copyButton = document.getElementById('copy-button');
+
+        // Special command for agent mode
+        if (textInput.value.trim().toLowerCase() === 'activate agent mode') {
+            activateSecretAgentMode();
+            textInput.value = '';
+            return;
+        }
+
+        fetch('/code', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            outputDiv.textContent = data.message || data.result;
+            if (data.status === 'success') {
+                outputDiv.classList.remove('error');
+                copyButton.style.display = 'inline-block';
+            } else {
+                outputDiv.classList.add('error');
+                copyButton.style.display = 'none';
+            }
+            resultContainer.style.display = 'block';
+            textInput.value = ''; // Clear input after submission
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            outputDiv.textContent = 'A fatal system error occurred.';
+            outputDiv.classList.add('error');
+            resultContainer.style.display = 'block';
+            copyButton.style.display = 'none';
+        });
+    });
+
+    // Konami Code
+    const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+    let konamiIndex = 0;
+    document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === konamiCode[konamiIndex]) {
+            konamiIndex++;
+            if (konamiIndex === konamiCode.length) {
+                activateSecretAgentMode();
+                konamiIndex = 0;
+            }
+        } else {
+            konamiIndex = 0;
+        }
+    });
+
+    function activateSecretAgentMode() {
+        document.body.classList.toggle('secret-agent');
+        const mainTitle = document.getElementById('main-title');
+        const subtitle = document.getElementById('subtitle');
+        const outputDiv = document.getElementById('output');
+        const resultContainer = document.getElementById('result-container');
+
+        if (document.body.classList.contains('secret-agent')) {
+            mainTitle.textContent = 'Agent Mode Activated';
+            subtitle.textContent = 'Welcome, Agent. You have a new mission.';
+            matrixPrimaryColor = '#ff0000';
+            outputDiv.textContent = 'MISSION: Decrypt the following message: ....-./---/-.--/./.../--.-';
+            outputDiv.classList.remove('error');
+            resultContainer.style.display = 'block';
+            document.body.style.animation = 'shake 0.5s';
+        } else {
+            mainTitle.textContent = 'Morse Code Decryptor';
+            subtitle.textContent = 'Engage the system. Encrypt or decrypt transmissions.';
+            matrixPrimaryCozlor = '#00ff00';
+            resultContainer.style.display = 'none';
+            document.body.style.animation = '';
+        }
+    }
+
+    // Clipboard
+    function copyToClipboard() {
+        const outputText = document.getElementById('output').textContent;
+        navigator.clipboard.writeText(outputText).then(() => {
+            alert("Output copied to clipboard.");
+        }, (err) => {
+            console.error('Could not copy text: ', err);
+            alert("Failed to copy output.");
+        });
+    }
 </script>
+</body>
 </html>
