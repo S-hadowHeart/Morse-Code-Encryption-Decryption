@@ -6,221 +6,97 @@
     <title>Morse Code Decryptor</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #00ff00;
-            --background-color: #0a0a0a;
-            --container-bg: rgba(0, 255, 0, 0.05);
-            --border-color: rgba(0, 255, 0, 0.2);
-            --my-message-bg: rgba(0, 255, 0, 0.15);
-            --other-message-bg: rgba(255, 255, 255, 0.1);
-        }
-        body { font-family: 'Roboto Mono', monospace; background-color: var(--background-color); color: var(--text-color); height: 100vh; margin: 0; overflow: hidden; }
-        .container { text-align: center; background-color: var(--container-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; }
-        h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); }
-        #chat-ui-container { display: none; flex-direction: column; height: 80vh; width:100%; }
-        #chat-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; border-bottom: 1px solid var(--border-color); }
-        #messages { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; }
-        #messages::-webkit-scrollbar { width: 8px; }
-        #messages::-webkit-scrollbar-track { background: transparent; }
-        #messages::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
-        .message-wrapper { display: flex; flex-direction: column; }
-        .message-wrapper.mine { align-items: flex-end; }
-        .message-wrapper.other { align-items: flex-start; }
-        .message { padding: 8px 12px; border-radius: 10px; max-width: 85%; word-wrap: break-word; position: relative; }
-        .message.mine { background-color: var(--my-message-bg); }
-        .message.other { background-color: var(--other-message-bg); }
-        .message-actions { display: none; position: absolute; top: -15px; right: 10px; background: #333; border-radius: 10px; padding: 2px 5px; }
-        .message:hover .message-actions { display: block; }
-        .action-btn { background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 2px; }
-        .reply-snippet { background: rgba(0,0,0,0.2); padding: 5px 8px; margin-bottom: 5px; border-radius: 5px; border-left: 2px solid var(--primary-color); cursor: pointer; text-align: left; }
-        .reply-snippet p { margin: 0; font-size: 0.8em; opacity: 0.8; }
-        .reactions { display: flex; gap: 5px; margin-top: 5px; }
-        .reaction { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; font-size: 0.8em; cursor: pointer; }
-        .reaction.reacted { background: var(--primary-color); color: black; }
-        #emoji-picker { display: none; position: absolute; background: #222; border: 1px solid var(--border-color); padding: 5px; border-radius: 5px; z-index: 100; }
-        .emoji { cursor: pointer; font-size: 1.2em; padding: 2px; }
-        #reply-preview { display: none; padding: 8px 15px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        #message-form { display: flex; padding-top: 10px; }
+:root { --primary-color: #00ff00; --background-color: #0a0a0a; --container-bg: rgba(0, 255, 0, 0.05); --border-color: rgba(0, 255, 0, 0.2); --my-message-bg: rgba(0, 255, 0, 0.15); --other-message-bg: rgba(255, 255, 255, 0.1); }
+body { font-family: 'Roboto Mono', monospace; background-color: var(--background-color); color: var(--text-color); height: 100vh; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+.container { text-align: center; background-color: var(--container-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; }
+h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); }
+input, button, a.button-link { font-family: 'Roboto Mono', monospace; border: 1px solid var(--border-color); background-color: var(--container-bg); color: var(--primary-color); padding: 10px; border-radius: 5px; }
+#morse-container, #chat-login-container { display: block; }
+#chat-ui-container { display: none; flex-direction: column; height: 80vh; width:100%; }
+#chat-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; border-bottom: 1px solid var(--border-color); }
+#messages { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; }
+#messages::-webkit-scrollbar { width: 8px; }
+#messages::-webkit-scrollbar-track { background: transparent; }
+#messages::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
+.message-wrapper { display: flex; flex-direction: column; margin-bottom: 10px; }
+.message-wrapper.mine { align-items: flex-end; }
+.message-wrapper.other { align-items: flex-start; }
+.message { padding: 8px 12px; border-radius: 10px; max-width: 85%; word-wrap: break-word; position: relative; }
+.message.mine { background-color: var(--my-message-bg); }
+.message.other { background-color: var(--other-message-bg); }
+.message-actions { display: none; position: absolute; top: -15px; right: 10px; background: #333; border-radius: 10px; padding: 2px 5px; }
+.message:hover .message-actions { display: block; }
+.action-btn { background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 2px; }
+.reply-snippet { background: rgba(0,0,0,0.2); padding: 5px 8px; margin: 0 0 5px 0; border-radius: 5px; border-left: 2px solid var(--primary-color); cursor: pointer; text-align: left; }
+.reactions { display: flex; gap: 5px; margin-top: 5px; }
+.reaction { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; font-size: 0.8em; cursor: pointer; }
+.reaction.reacted { background: var(--primary-color); color: black; }
+#emoji-picker { display: none; position: absolute; background: #222; border: 1px solid var(--border-color); padding: 5px; border-radius: 5px; z-index: 100; }
+.emoji { cursor: pointer; font-size: 1.2em; padding: 2px; }
+#reply-preview { display: none; padding: 8px 15px; margin-top: 10px; border-top: 1px solid var(--border-color); text-align: left; position: relative; }
+#cancel-reply { position: absolute; top: 5px; right: 5px; background: none; border: none; color: white; cursor: pointer; font-size: 16px; }
+#message-form { display: flex; padding-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container" id="main-container">
+        <div id="morse-container">
+            <h1>Morse Code Decryptor</h1>
+            <p>Type 'enter chat' to access the secure messenger.</p>
+            <form id="code-form"><input type="text" id="textInput" placeholder="Input sequence..." autocomplete="off"></form>
+        </div>
+        <div id="chat-login-container" style="display:none;">
+            <h1>Secure Chat</h1>
+            <button id="create-room">Create Room</button>
+            <input type="text" id="room-code-input" placeholder="Enter Room Code...">
+            <button id="join-room">Join</button>
+             <button id="back-to-morse">Back</button>
+        </div>
         <div id="chat-ui-container">
-            <div id="chat-header">
-                <span id="room-display"></span>
-                <button id="leave-room">Leave</button>
-            </div>
+            <div id="chat-header"><span id="room-display"></span><button id="leave-room">Leave</button></div>
             <div id="messages"></div>
-            <div id="reply-preview">
-                <p>Replying to <b id="reply-agent"></b></p>
-                <span id="reply-text"></span>
-                <button id="cancel-reply">X</button>
-            </div>
-            <form id="message-form">
-                <input type="text" id="message-input" placeholder="Send a message...">
-                <button type="submit">Send</button>
-            </form>
+            <div id="reply-preview"><p>Replying to <b id="reply-agent"></b></p><span id="reply-text"></span><button id="cancel-reply">X</button></div>
+            <form id="message-form"><input type="text" id="message-input" placeholder="Send a message..."><button type="submit">Send</button></form>
         </div>
     </div>
     <div id="emoji-picker"></div>
-
 <script>
-let currentRoom = null, agentName = null, chatInterval = null;
-let replyingToMessageId = null;
+let currentRoom = null, agentName = null, chatInterval = null, replyingToMessageId = null;
 let messagesData = [];
-
-const messagesDiv = document.getElementById('messages');
-const messageForm = document.getElementById('message-form');
-const messageInput = document.getElementById('message-input');
-const replyPreview = document.getElementById('reply-preview');
-const emojiPicker = document.getElementById('emoji-picker');
+const morseContainer = document.getElementById('morse-container'), chatLoginContainer = document.getElementById('chat-login-container'), chatUiContainer = document.getElementById('chat-ui-container');
+const messagesDiv = document.getElementById('messages'), messageForm = document.getElementById('message-form'), messageInput = document.getElementById('message-input'), replyPreview = document.getElementById('reply-preview'), emojiPicker = document.getElementById('emoji-picker');
 const availableEmojis = ['👍', '❤️', '😂', '😯', '😢', '😡'];
 
-// Dummy startChatSession for demonstration
-function startChatSession(room, agent) {
-    currentRoom = room; agentName = agent;
-    document.getElementById('chat-ui-container').style.display = 'flex';
-    loadMessages();
-    chatInterval = setInterval(loadMessages, 3000);
-}
-
-messageForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const text = messageInput.value.trim();
-    if (!text) return;
-
-    const formData = new FormData();
-    formData.append('room_code', currentRoom);
-    formData.append('agent_name', agentName);
-    formData.append('message', text);
-    if (replyingToMessageId) {
-        formData.append('reply_to', replyingToMessageId);
-    }
-
-    fetch('/chat/send', { method: 'POST', body: formData })
-        .then(() => {
-            messageInput.value = '';
-            cancelReplyMode();
-            loadMessages(true);
-        });
-});
+function showView(view) { [morseContainer, chatLoginContainer, chatUiContainer].forEach(c => c.style.display = 'none'); view.style.display = view === chatUiContainer ? 'flex' : 'block'; }
+document.getElementById('code-form').addEventListener('submit', function(e) { e.preventDefault(); if (document.getElementById('textInput').value.toLowerCase() === 'enter chat') { showView(chatLoginContainer); } });
+document.getElementById('back-to-morse').addEventListener('click', () => showView(morseContainer));
+document.getElementById('create-room').addEventListener('click', () => { fetch('/chat/create', { method: 'POST' }).then(res => res.json()).then(data => { if(data.status==='success') startChatSession(data.room_code, data.agent_name); }); });
+document.getElementById('join-room').addEventListener('click', () => { const roomCode = document.getElementById('room-code-input').value; if(roomCode) { const fd = new FormData(); fd.append('room_code', roomCode); fetch('/chat/join', { method: 'POST', body: fd }).then(res => res.json()).then(data => { if(data.status==='success') startChatSession(roomCode, data.agent_name); }); } });
+document.getElementById('leave-room').addEventListener('click', () => { clearInterval(chatInterval); showView(chatLoginContainer); });
+messageForm.addEventListener('submit', function(e) { e.preventDefault(); const text = messageInput.value.trim(); if (!text) return; const fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); fd.append('message', text); if (replyingToMessageId) { fd.append('reply_to', replyingToMessageId); } fetch('/chat/send', { method: 'POST', body: fd }).then(() => { messageInput.value = ''; cancelReplyMode(); loadMessages(true); }); });
 document.getElementById('cancel-reply').addEventListener('click', cancelReplyMode);
 
-function loadMessages(forceScroll = false) {
-    if (!currentRoom) return;
-    fetch(`/chat/messages?room_code=${currentRoom}&agent_name=${agentName}`)
-        .then(res => res.json()).then(data => {
-            if (data.status !== 'success') return;
-            messagesData = data.messages;
-            const shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30);
-            messagesDiv.innerHTML = '';
-            messagesData.forEach(msg => messagesDiv.appendChild(createMessageElement(msg)));
-            if (shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
-}
-
+function startChatSession(room, agent) { currentRoom = room; agentName = agent; document.getElementById('room-display').textContent = `Room: ${room}`; showView(chatUiContainer); loadMessages(); chatInterval = setInterval(loadMessages, 3000); }
+function loadMessages(forceScroll = false) { if (!currentRoom) return; fetch(`/chat/messages?room_code=${currentRoom}&agent_name=${agentName}`).then(res => res.json()).then(data => { if (data.status !== 'success') return; messagesData = data.messages; const shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30); messagesDiv.innerHTML = ''; messagesData.forEach(msg => messagesDiv.appendChild(createMessageElement(msg))); if (shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight; }); }
 function createMessageElement(msg) {
-    const wrapper = document.createElement('div');
-    wrapper.id = `msg-${msg.id}`;
-    wrapper.className = `message-wrapper ${msg.agent === agentName ? 'mine' : 'other'}`;
-
-    const messageEl = document.createElement('div');
-    messageEl.className = `message ${msg.agent === agentName ? 'mine' : 'other'}`;
-
-    if (msg.reply_to) {
-        const originalMsg = messagesData.find(m => m.id === msg.reply_to);
-        if (originalMsg) {
-            const snippet = document.createElement('div');
-            snippet.className = 'reply-snippet';
-            snippet.innerHTML = `<p><strong>${originalMsg.agent}</strong></p><p>${getSnippetText(originalMsg.text)}</p>`;
-            snippet.onclick = () => document.getElementById(`msg-${msg.reply_to}`).scrollIntoView({ behavior: 'smooth' });
-            messageEl.appendChild(snippet);
-        }
-    }
-
-    const textEl = document.createElement('span');
-    textEl.textContent = msg.text;
-    messageEl.appendChild(textEl);
-    
-    const actions = document.createElement('div');
-    actions.className = 'message-actions';
-    const replyBtn = document.createElement('button');
-    replyBtn.innerHTML = '↪️'; replyBtn.className = 'action-btn';
-    replyBtn.onclick = () => setReplyMode(msg.id);
-    actions.appendChild(replyBtn);
-    const reactBtn = document.createElement('button');
-    reactBtn.innerHTML = '😊'; reactBtn.className = 'action-btn';
-    reactBtn.onclick = (e) => showEmojiPicker(msg.id, e);
-    actions.appendChild(reactBtn);
+    const wrapper = document.createElement('div'); wrapper.id = `msg-${msg.id}`; wrapper.className = `message-wrapper ${msg.agent === agentName ? 'mine' : 'other'}`;
+    const messageEl = document.createElement('div'); messageEl.className = `message ${msg.agent === agentName ? 'mine' : 'other'}`;
+    if (msg.reply_to) { const originalMsg = messagesData.find(m => m.id === msg.reply_to); if (originalMsg) { const snippet = document.createElement('div'); snippet.className = 'reply-snippet'; snippet.innerHTML = `<p><strong>${originalMsg.agent}</strong></p><p>${getSnippetText(originalMsg.text)}</p>`; snippet.onclick = () => document.getElementById(`msg-${msg.reply_to}`).scrollIntoView({ behavior: 'smooth' }); messageEl.appendChild(snippet); } }
+    const textEl = document.createElement('span'); textEl.textContent = msg.text; messageEl.appendChild(textEl);
+    const actions = document.createElement('div'); actions.className = 'message-actions';
+    const replyBtn = document.createElement('button'); replyBtn.innerHTML = '↪️'; replyBtn.className = 'action-btn'; replyBtn.onclick = () => setReplyMode(msg.id); actions.appendChild(replyBtn);
+    const reactBtn = document.createElement('button'); reactBtn.innerHTML = '😊'; reactBtn.className = 'action-btn'; reactBtn.onclick = (e) => showEmojiPicker(msg.id, e); actions.appendChild(reactBtn);
     messageEl.appendChild(actions);
-
-    if (Object.keys(msg.reactions).length > 0) {
-        const reactionsEl = document.createElement('div');
-        reactionsEl.className = 'reactions';
-        for (const [emoji, agents] of Object.entries(msg.reactions)) {
-            const reaction = document.createElement('span');
-            reaction.className = `reaction ${agents.includes(agentName) ? 'reacted' : ''}`;
-            reaction.textContent = `${emoji} ${agents.length}`;
-            reaction.onclick = () => sendReaction(msg.id, emoji);
-            reactionsEl.appendChild(reaction);
-        }
-        messageEl.appendChild(reactionsEl);
-    }
-
-    wrapper.appendChild(messageEl);
-    return wrapper;
+    if (msg.reactions && Object.keys(msg.reactions).length > 0) { const reactionsEl = document.createElement('div'); reactionsEl.className = 'reactions'; for (const [emoji, agents] of Object.entries(msg.reactions)) { const reaction = document.createElement('span'); reaction.className = `reaction ${agents.includes(agentName) ? 'reacted' : ''}`; reaction.textContent = `${emoji} ${agents.length}`; reaction.onclick = () => sendReaction(msg.id, emoji); reactionsEl.appendChild(reaction); } messageEl.appendChild(reactionsEl); }
+    wrapper.appendChild(messageEl); return wrapper;
 }
-
-function setReplyMode(messageId) {
-    const message = messagesData.find(m => m.id === messageId);
-    if (!message) return;
-    replyingToMessageId = messageId;
-    document.getElementById('reply-agent').textContent = message.agent;
-    document.getElementById('reply-text').textContent = getSnippetText(message.text);
-    replyPreview.style.display = 'block';
-    messageInput.focus();
-}
-
-function cancelReplyMode() {
-    replyingToMessageId = null;
-    replyPreview.style.display = 'none';
-}
-
-function showEmojiPicker(messageId, event) {
-    emojiPicker.innerHTML = '';
-    availableEmojis.forEach(emoji => {
-        const emojiEl = document.createElement('span');
-        emojiEl.className = 'emoji';
-        emojiEl.textContent = emoji;
-        emojiEl.onclick = () => { sendReaction(messageId, emoji); emojiPicker.style.display = 'none'; };
-        emojiPicker.appendChild(emojiEl);
-    });
-    const rect = event.target.getBoundingClientRect();
-    emojiPicker.style.left = `${rect.left}px`;
-    emojiPicker.style.top = `${rect.top - emojiPicker.offsetHeight - 5}px`;
-    emojiPicker.style.display = 'block';
-}
-
-function sendReaction(messageId, emoji) {
-    const formData = new FormData();
-    formData.append('room_code', currentRoom);
-    formData.append('agent_name', agentName);
-    formData.append('message_id', messageId);
-    formData.append('emoji', emoji);
-    fetch('/chat/react', { method: 'POST', body: formData })
-        .then(() => loadMessages());
-}
-
-function getSnippetText(text) {
-    if (text.startsWith('[IMAGE]')) return 'Image';
-    if (text.startsWith('[VIDEO]')) return 'Video';
-    return text.length > 50 ? text.substring(0, 50) + '...' : text;
-}
-
+function setReplyMode(messageId) { const message = messagesData.find(m => m.id === messageId); if (!message) return; replyingToMessageId = messageId; document.getElementById('reply-agent').textContent = message.agent; document.getElementById('reply-text').textContent = getSnippetText(message.text); replyPreview.style.display = 'block'; messageInput.focus(); }
+function cancelReplyMode() { replyingToMessageId = null; replyPreview.style.display = 'none'; }
+function showEmojiPicker(messageId, event) { emojiPicker.innerHTML = ''; availableEmojis.forEach(emoji => { const emojiEl = document.createElement('span'); emojiEl.className = 'emoji'; emojiEl.textContent = emoji; emojiEl.onclick = () => { sendReaction(messageId, emoji); emojiPicker.style.display = 'none'; }; emojiPicker.appendChild(emojiEl); }); const rect = event.target.getBoundingClientRect(); emojiPicker.style.left = `${rect.left}px`; emojiPicker.style.top = `${rect.top - 35}px`; emojiPicker.style.display = 'block'; }
+function sendReaction(messageId, emoji) { const fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); fd.append('message_id', messageId); fd.append('emoji', emoji); fetch('/chat/react', { method: 'POST', body: fd }).then(() => loadMessages()); }
+function getSnippetText(text) { if (text.startsWith('[IMAGE]')) return 'Image'; if (text.startsWith('[VIDEO]')) return 'Video'; return text.length > 50 ? text.substring(0, 50) + '...' : text; }
 window.addEventListener('click', (e) => { if (!emojiPicker.contains(e.target) && !e.target.matches('.action-btn')) emojiPicker.style.display = 'none'; });
-
-// To run this demo, call this function manually from the console, e.g.:
-// startChatSession('demo-room-123', 'Agent Smith');
+showView(morseContainer);
 </script>
 </body>
 </html>
