@@ -201,26 +201,74 @@
             opacity: 0;
             transition: opacity 0.5s;
         }
+
+        /* Chat Styles */
+        #chat-container {
+            display: none;
+            flex-direction: column;
+            height: 80%;
+            width: 100%;
+        }
+
+        #messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            margin-bottom: 10px;
+            background: var(--container-bg);
+        }
+
+        .message {
+            margin-bottom: 10px;
+        }
+
+        .message .agent {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
     <canvas id="matrix-canvas"></canvas>
     <div id="notification"></div>
-    <form id="code-form">
-        <div class="container">
+    <div class="container" id="main-container">
+        <div id="morse-container">
             <h1 id="main-title">Morse Code Decryptor</h1>
             <p id="subtitle">Engage the system. Encrypt or decrypt transmissions.</p>
-            <input type="text" id="textInput" name="textInput" placeholder="[Input sequence...]" autocomplete="off" aria-label="Input for Morse Code or Text">
-            <button type="submit" id="submit">Execute</button>
+            <form id="code-form">
+                <input type="text" id="textInput" name="textInput" placeholder="[Input sequence...]" autocomplete="off" aria-label="Input for Morse Code or Text">
+                <button type="submit" id="submit">Execute</button>
+            </form>
             <div id="result-container" style="display: none;" role="region" aria-live="polite">
-                 <div class="output" id="output"></div>
-                 <button type="button" id="copy-button" onclick="copyToClipboard()">Copy Output</button>
+                    <div class="output" id="output"></div>
+                    <button type="button" id="copy-button" onclick="copyToClipboard()">Copy Output</button>
             </div>
         </div>
-    </form>
+
+        <div id="chat-container">
+            <h1>Secure Chat</h1>
+            <div id="chat-login">
+                <button id="create-room">Create Room</button>
+                <input type="text" id="room-code-input" placeholder="Enter Room Code...">
+                <button id="join-room">Join</button>
+            </div>
+            <div id="chat-ui" style="display: none;">
+                <div id="messages"></div>
+                <form id="message-form">
+                    <input type="text" id="message-input" placeholder="Send a message...">
+                    <button type="submit">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
     
 <script>
-    // Matrix Rain Effect
+    // --- Global State ---
+    let currentRoom = null;
+    let agentName = null;
+
+    // --- Matrix Rain Effect ---
     const canvas = document.getElementById('matrix-canvas');
     const ctx = canvas.getContext('2d');
 
@@ -261,23 +309,24 @@
 
     let matrixInterval = setInterval(draw, 33);
 
-    // Form Submission
+    // --- Morse Code Section ---
     document.getElementById('code-form').addEventListener('submit', function(event) {
         event.preventDefault();
 
-        const form = event.target;
-        const formData = new FormData(form);
         const textInput = document.getElementById('textInput');
-        const outputDiv = document.getElementById('output');
-        const resultContainer = document.getElementById('result-container');
-        const copyButton = document.getElementById('copy-button');
-
-        // Special command for agent mode
-        if (textInput.value.trim().toLowerCase() === 'activate agent mode') {
-            activateSecretAgentMode();
+        const text = textInput.value.trim().toLowerCase();
+        
+        if (text === 'enter chat') {
+            document.getElementById('morse-container').style.display = 'none';
+            document.getElementById('chat-container').style.display = 'flex';
             textInput.value = '';
             return;
         }
+
+        const formData = new FormData(event.target);
+        const outputDiv = document.getElementById('output');
+        const resultContainer = document.getElementById('result-container');
+        const copyButton = document.getElementById('copy-button');
 
         fetch('/code', {
             method: 'POST',
@@ -305,6 +354,93 @@
         });
     });
 
+    // --- Chat Section ---
+    document.getElementById('create-room').addEventListener('click', () => {
+        fetch('/chat/create', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showNotification(`Room created. Code: ${data.room_code}`);
+                currentRoom = data.room_code;
+                joinChat(currentRoom);
+            }
+        });
+    });
+
+    document.getElementById('join-room').addEventListener('click', () => {
+        const roomCode = document.getElementById('room-code-input').value.trim();
+        if (roomCode) {
+            joinChat(roomCode);
+        }
+    });
+
+    function joinChat(roomCode) {
+        const formData = new FormData();
+        formData.append('room_code', roomCode);
+
+        fetch('/chat/join', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                currentRoom = roomCode;
+                agentName = data.agent_name;
+                document.getElementById('chat-login').style.display = 'none';
+                document.getElementById('chat-ui').style.display = 'block';
+                showNotification(`Joined room. You are Agent ${agentName}`);
+                loadMessages();
+            } else {
+                showNotification(data.message);
+            }
+        });
+    }
+
+    function loadMessages() {
+        if (!currentRoom) return;
+
+        fetch(`/chat/messages?room_code=${currentRoom}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const messageEl = document.createElement('div');
+                    messageEl.classList.add('message');
+                    messageEl.innerHTML = `<span class="agent">${msg.agent}:</span> ${msg.text}`;
+                    messagesDiv.appendChild(messageEl);
+                });
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        });
+    }
+
+    document.getElementById('message-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+
+        if (message && currentRoom && agentName) {
+            const formData = new FormData();
+            formData.append('room_code', currentRoom);
+            formData.append('agent_name', agentName);
+            formData.append('message', message);
+
+            fetch('/chat/send', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    messageInput.value = '';
+                    loadMessages();
+                }
+            });
+        }
+    });
+
+    setInterval(loadMessages, 3000);
+
+
+    // --- General Functions ---
+
     // Konami Code
     const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     let konamiIndex = 0;
@@ -331,7 +467,7 @@
             mainTitle.textContent = 'Agent Mode Activated';
             subtitle.textContent = 'Welcome, Agent. You have a new mission.';
             matrixPrimaryColor = '#ff0000';
-            outputDiv.textContent = 'MISSION: Decrypt the following message: ....-./---/-.--/./.../--.-';
+            outputDiv.textContent = 'MISSION: Decrypt the following message: 💜💙💙💙/💜/💜💙💜💜/💜💙💜💜/💜💜💜💜💜 / 💜💜💜💙/💜💜💜💜💜/💜💙💜/💜💙💜💜/💙💜💜';
             outputDiv.classList.remove('error');
             resultContainer.style.display = 'block';
         } else {
@@ -349,7 +485,7 @@
         notification.style.opacity = 1;
         setTimeout(() => {
             notification.style.opacity = 0;
-        }, 2000);
+        }, 3000);
     }
 
     function copyToClipboard() {
