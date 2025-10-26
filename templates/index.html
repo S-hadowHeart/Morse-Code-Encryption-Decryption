@@ -7,13 +7,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #00ff00;
-            --background-color: #0a0a0a;
-            --container-bg: rgba(0, 255, 0, 0.05);
-            --border-color: rgba(0, 255, 0, 0.2);
-            --shadow-color: rgba(0, 255, 0, 0.5);
-            --text-color: #e5e5e5;
-            --my-message-bg: rgba(0, 255, 0, 0.15);
+            --primary-color: #8A2BE2; /* BlueViolet */
+            --background-color: #1a1a2e;
+            --container-bg: rgba(138, 43, 226, 0.1);
+            --border-color: rgba(138, 43, 226, 0.3);
+            --shadow-color: rgba(138, 43, 226, 0.6);
+            --text-color: #e0e0e0;
+            --my-message-bg: rgba(138, 43, 226, 0.2);
             --other-message-bg: rgba(255, 255, 255, 0.1);
         }
         body.secret-agent-mode {
@@ -28,7 +28,7 @@
         #matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
         .container { text-align: center; background-color: var(--container-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color); box-shadow: 0 0 30px var(--shadow-color); width: 90%; max-width: 700px; position: relative; transition: all 0.5s; }
         h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); }
-        input, button, a.button-link { font-family: 'Roboto Mono', monospace; border: 1px solid var(--border-color); background-color: var(--container-bg); color: var(--primary-color); padding: 10px; margin: 5px; border-radius: 5px; transition: all 0.5s; }
+        input, select, button, a.button-link { font-family: 'Roboto Mono', monospace; border: 1px solid var(--border-color); background-color: var(--container-bg); color: var(--primary-color); padding: 10px; margin: 5px; border-radius: 5px; transition: all 0.5s; }
         button, a.button-link { cursor: pointer; font-family: 'Orbitron', sans-serif; text-decoration: none; }
         button:hover, a.button-link:hover { background-color: var(--primary-color); color: var(--background-color); }
         #morse-container, #chat-login-container { display: block; }
@@ -74,7 +74,22 @@
         <div id="morse-container">
             <h1>Morse Code Decryptor</h1>
             <p>Type 'enter chat' to access the secure messenger, or 'guide' for help.</p>
-            <form id="code-form"><input type="text" id="textInput" placeholder="Input sequence..." autocomplete="off"><button type="submit">Execute</button></form>
+            <form id="code-form">
+                <input type="text" id="textInput" placeholder="Input sequence..." autocomplete="off">
+                <select id="theme-selector">
+                    <option value="-1">Default</option>
+                    <option value="0">💜💙</option>
+                    <option value="1">✨💫</option>
+                    <option value="2">🔥💧</option>
+                    <option value="3">💀👻</option>
+                    <option value="4">🎵🎶</option>
+                    <option value="5">☀️🌙</option>
+                    <option value="6">🐾🦴</option>
+                    <option value="7">🌸🌺</option>
+                    <option value="8">🔹🔸</option>
+                </select>
+                <button type="submit">Execute</button>
+            </form>
             <p id="result-display"></p>
         </div>
         <div id="chat-login-container" style="display:none;">
@@ -112,21 +127,42 @@ var availableEmojis=['👍', '❤️', '😂', '😯', '😢', '😡'];
 
 // --- View & Command Handling ---
 function showView(view) { [morseContainer, chatLoginContainer, chatUiContainer].forEach(function(c){ c.style.display='none'; }); view.style.display = view === chatUiContainer ? 'flex' : 'block'; }
-document.getElementById('code-form').addEventListener('submit', function(e) { 
+document.getElementById('code-form').addEventListener('submit', function(e) {
     e.preventDefault();
     var textInput = document.getElementById('textInput');
+    var themeSelector = document.getElementById('theme-selector');
     var input = textInput.value.trim();
     if (!input) return;
+
+    var themeIndex = themeSelector.value;
+    var textToSend = input;
+    if (themeIndex !== "-1") {
+        textToSend = input + " " + (parseInt(themeIndex) + 1);
+    }
+
     var lowerInput = input.toLowerCase();
-    if (lowerInput === 'enter chat') { showView(chatLoginContainer); textInput.value = ''; resultDisplay.innerHTML = ''; }
-    else if (lowerInput === 'guide') { window.location.href = '/guide'; }
-    else {
+    if (lowerInput === 'enter chat') {
+        showView(chatLoginContainer);
+        textInput.value = '';
+        resultDisplay.innerHTML = '';
+    } else if (lowerInput === 'guide') {
+        window.location.href = '/guide';
+    } else {
         var formData = new FormData();
-        formData.append('textInput', input);
-        fetch('/code', { method: 'POST', body: formData })
-            .then(function(res){ return res.json(); })
-            .then(function(data){ resultDisplay.textContent = data.status === 'success' ? data.result : data.message; })
-            .catch(function(){ resultDisplay.textContent = 'Error: Could not connect to system.'; });
+        formData.append('textInput', textToSend);
+        fetch('/code', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(res) {
+                return res.json();
+            })
+            .then(function(data) {
+                resultDisplay.textContent = data.status === 'success' ? data.result : data.message;
+            })
+            .catch(function() {
+                resultDisplay.textContent = 'Error: Could not connect to system.';
+            });
     }
 });
 document.getElementById('back-to-morse').addEventListener('click', function(){ showView(morseContainer); });
