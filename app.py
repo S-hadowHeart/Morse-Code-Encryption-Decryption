@@ -92,6 +92,10 @@ def get_messages():
 def index():
     return render_template('index.html')
 
+@app.route('/guide')
+def guide():
+    return render_template('guide.html')
+
 @app.route('/code', methods=['POST'])
 def code():
     text = request.form.get('textInput', '').strip().lower()

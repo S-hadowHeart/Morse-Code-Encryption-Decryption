@@ -211,6 +211,11 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 1.1em;
             color: var(--primary-color);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        #room-display:hover {
+            color: #fff;
         }
 
         #messages {
@@ -230,6 +235,15 @@
             margin-bottom: 10px;
             max-width: 70%;
             word-wrap: break-word;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInMessage 0.5s forwards;
+        }
+        @keyframes fadeInMessage {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message .agent {
@@ -238,6 +252,12 @@
             display: block;
             margin-bottom: 4px;
             font-size: 0.9em;
+        }
+
+        .message .text.encrypted {
+            cursor: help;
+            user-select: none;
+            text-shadow: 0 0 8px var(--primary-color);
         }
 
         .message.mine {
@@ -288,7 +308,7 @@
             </div>
             <div id="messages"></div>
             <form id="message-form">
-                <input type="text" id="message-input" placeholder="Send a message...">
+                <input type="text" id="message-input" placeholder="Send a message... or a command?">
                 <button type="submit">Send</button>
             </form>
         </div>
@@ -300,11 +320,13 @@
     let agentName = null;
     let chatInterval = null;
     let isRequestPending = false;
+    let displayedMessagesCount = 0;
 
     // --- DOM Elements ---
     const morseContainer = document.getElementById('morse-container');
     const chatLoginContainer = document.getElementById('chat-login-container');
     const chatUiContainer = document.getElementById('chat-ui-container');
+    const roomDisplay = document.getElementById('room-display');
 
     // --- Matrix Rain Effect ---
     const canvas = document.getElementById('matrix-canvas');
@@ -353,6 +375,12 @@
             return;
         }
 
+        if (text === 'help' || text === 'guide') {
+            window.location.href = '/guide';
+            textInput.value = '';
+            return;
+        }
+
         const submitBtn = this.querySelector('button[type="submit"]');
         textInput.disabled = true;
         submitBtn.disabled = true;
@@ -384,11 +412,12 @@
     function startChatSession(roomCode, assignedAgent) {
         currentRoom = roomCode;
         agentName = assignedAgent;
-        document.getElementById('room-display').textContent = `Room: ${currentRoom}`;
+        roomDisplay.textContent = `Room: ${currentRoom}`;
         showView(chatUiContainer);
         loadMessages();
         if (chatInterval) clearInterval(chatInterval);
         chatInterval = setInterval(loadMessages, 3000);
+        displayedMessagesCount = 0;
     }
 
     function endChatSession() {
@@ -397,6 +426,14 @@
         agentName = null;
         showView(morseContainer);
     }
+
+    roomDisplay.addEventListener('click', () => {
+        if (currentRoom) {
+            navigator.clipboard.writeText(currentRoom).then(() => {
+                showNotification("Room code copied to clipboard!");
+            });
+        }
+    });
 
     document.getElementById('create-room').addEventListener('click', () => {
         if (isRequestPending) return;
@@ -464,7 +501,13 @@
         e.preventDefault();
         if (isRequestPending) return;
         const messageInput = document.getElementById('message-input');
-        const message = messageInput.value.trim();
+        let message = messageInput.value.trim();
+
+        if (message.startsWith('/encrypt ')) {
+            const plainText = message.substring(9);
+            message = `[ENCRYPTED]${btoa(plainText)}`;
+        }
+
         if (message && currentRoom && agentName) {
             isRequestPending = true;
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -503,18 +546,63 @@
                 const messagesDiv = document.getElementById('messages');
                 const shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30);
                 
-                messagesDiv.innerHTML = '';
-                data.messages.forEach(msg => {
-                    const messageEl = document.createElement('div');
-                    messageEl.classList.add('message', msg.agent === agentName ? 'mine' : 'other');
-                    messageEl.innerHTML = `<span class="agent">${msg.agent}</span><span class="text">${msg.text}</span>`;
-                    messagesDiv.appendChild(messageEl);
-                });
-                if(shouldScroll) {
+                if (data.messages.length > displayedMessagesCount) {
+                    const newMessages = data.messages.slice(displayedMessagesCount);
+                    newMessages.forEach((msg, index) => {
+                        setTimeout(() => {
+                            const messageEl = createMessageElement(msg);
+                            messagesDiv.appendChild(messageEl);
+                            if (shouldScroll) {
+                                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                            }
+                        }, index * 200);
+                    });
+                    displayedMessagesCount = data.messages.length;
+                } else if (data.messages.length < displayedMessagesCount) {
+                    // Full redraw if messages were deleted (or for robustness)
+                    messagesDiv.innerHTML = '';
+                    data.messages.forEach(msg => {
+                        const messageEl = createMessageElement(msg);
+                        messagesDiv.appendChild(messageEl);
+                    });
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    displayedMessagesCount = data.messages.length;
                 }
             }
         });
+    }
+
+    function createMessageElement(msg) {
+        const messageEl = document.createElement('div');
+        messageEl.classList.add('message', msg.agent === agentName ? 'mine' : 'other');
+
+        const agentEl = document.createElement('span');
+        agentEl.className = 'agent';
+        agentEl.textContent = msg.agent;
+
+        const textEl = document.createElement('span');
+        textEl.className = 'text';
+        
+        if (msg.text.startsWith('[ENCRYPTED]')) {
+            textEl.textContent = msg.text.substring(11);
+            textEl.classList.add('encrypted');
+            try {
+                const decryptedText = atob(textEl.textContent);
+                messageEl.addEventListener('click', () => {
+                    textEl.textContent = decryptedText;
+                    textEl.classList.remove('encrypted');
+                }, { once: true });
+            } catch (e) { 
+                textEl.textContent = '[Decryption Error]';
+                textEl.classList.remove('encrypted');
+            }
+        } else {
+            textEl.textContent = msg.text;
+        }
+
+        messageEl.appendChild(agentEl);
+        messageEl.appendChild(textEl);
+        return messageEl;
     }
 
     // --- General Functions ---
