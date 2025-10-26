@@ -11,656 +11,216 @@
             --background-color: #0a0a0a;
             --container-bg: rgba(0, 255, 0, 0.05);
             --border-color: rgba(0, 255, 0, 0.2);
-            --shadow-color: rgba(0, 255, 0, 0.5);
-            --text-color: #e5e5e5;
-            --error-color: #ff4d4d;
-            --notification-bg: rgba(0, 255, 0, 0.2);
-            --notification-border: #00ff00;
-            --chat-bg: rgba(0, 0, 0, 0.7);
             --my-message-bg: rgba(0, 255, 0, 0.15);
             --other-message-bg: rgba(255, 255, 255, 0.1);
         }
-
-        body.secret-agent {
-            --primary-color: #ff0000;
-            --shadow-color: rgba(255, 0, 0, 0.5);
-            --container-bg: rgba(255, 0, 0, 0.05);
-            --border-color: rgba(255, 0, 0, 0.2);
-            --notification-bg: rgba(255, 0, 0, 0.2);
-            --notification-border: #ff0000;
-            --my-message-bg: rgba(255, 0, 0, 0.15);
-        }
-
-        body {
-            font-family: 'Roboto Mono', monospace;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            text-shadow: 0 0 5px var(--shadow-color);
-            transition: all 0.5s ease;
-        }
-
-        #matrix-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-
-        .container {
-            text-align: center;
-            background-color: var(--container-bg);
-            padding: 30px;
-            border-radius: 15px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 0 30px var(--shadow-color);
-            animation: fadeIn 1s ease-in-out;
-            width: 90%;
-            max-width: 700px;
-            position: relative;
-        }
-
-        .container::before, .container::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border-color: var(--primary-color);
-            border-style: solid;
-            animation: flicker 1.5s infinite alternate;
-        }
-
-        .container::before {
-            top: -5px;
-            left: -5px;
-            border-width: 2px 0 0 2px;
-        }
-
-        .container::after {
-            bottom: -5px;
-            right: -5px;
-            border-width: 0 2px 2px 0;
-        }
-
-        h1 {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--primary-color);
-            margin-bottom: 20px;
-            font-size: 2.5rem;
-            animation: flicker 1.5s infinite alternate, glitch 5s linear infinite;
-        }
-
-        p {
-            color: var(--text-color);
-            margin-bottom: 30px;
-            font-size: 1rem;
-        }
-
-        input[type="text"] {
-            font-family: 'Roboto Mono', monospace;
-            padding: 15px;
-            margin-bottom: 20px;
-            width: 100%;
-            box-sizing: border-box;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            background-color: var(--container-bg);
-            color: var(--primary-color);
-            font-size: 1rem;
-            text-shadow: 0 0 3px var(--primary-color);
-            transition: all 0.3s ease;
-        }
-        
-        input:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        button, a.button-link {
-            font-family: 'Orbitron', sans-serif;
-            background-color: transparent;
-            color: var(--primary-color);
-            padding: 10px 20px;
-            border: 1px solid var(--primary-color);
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-            margin: 5px;
-            text-shadow: 0 0 5px var(--primary-color);
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        button:hover:not(:disabled), a.button-link:hover {
-            background-color: var(--primary-color);
-            color: var(--background-color);
-            box-shadow: 0 0 20px var(--shadow-color);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            color: var(--primary-color);
-        }
-
-        .output {
-            margin-top: 20px;
-            font-weight: bold;
-            color: var(--primary-color);
-            font-size: 1.2rem;
-            background-color: var(--container-bg);
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid var(--border-color);
-            word-wrap: break-word;
-            white-space: pre-wrap;
-            min-height: 50px;
-        }
-        
-        .output.error {
-            color: var(--error-color);
-        }
-
-        #notification {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background-color: var(--notification-bg);
-            color: var(--primary-color);
-            padding: 15px 25px;
-            border-radius: 8px;
-            border: 2px solid var(--notification-border);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.5s, transform 0.5s;
-            box-shadow: 0 0 15px var(--shadow-color);
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        /* Chat Styles */
-        #chat-login-container, #chat-ui-container {
-            display: none;
-            width: 100%;
-        }
-
-        #chat-ui-container {
-            display: none;
-            flex-direction: column;
-            height: 80vh;
-        }
-        
-        #chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 10px;
-            background: var(--container-bg);
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 10px;
-        }
-
-        #room-display {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.1em;
-            color: var(--primary-color);
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-        #room-display:hover {
-            color: #fff;
-        }
-
-        #messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            padding: 15px;
-            margin-bottom: 10px;
-            background: var(--chat-bg);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .message {
-            padding: 8px 12px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            max-width: 70%;
-            word-wrap: break-word;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInMessage 0.5s forwards;
-        }
-        @keyframes fadeInMessage {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message .agent {
-            font-weight: bold;
-            color: var(--primary-color);
-            display: block;
-            margin-bottom: 4px;
-            font-size: 0.9em;
-        }
-
-        .message .text.encrypted {
-            cursor: help;
-            user-select: none;
-            text-shadow: 0 0 8px var(--primary-color);
-        }
-
-        .message.mine {
-            background-color: var(--my-message-bg);
-            align-self: flex-end;
-            text-align: right;
-        }
-
-        .message.other {
-            background-color: var(--other-message-bg);
-            align-self: flex-start;
-            text-align: left;
-        }
-
+        body { font-family: 'Roboto Mono', monospace; background-color: var(--background-color); color: var(--text-color); height: 100vh; margin: 0; overflow: hidden; }
+        .container { text-align: center; background-color: var(--container-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; }
+        h1 { font-family: 'Orbitron', sans-serif; color: var(--primary-color); }
+        #chat-ui-container { display: none; flex-direction: column; height: 80vh; width:100%; }
+        #chat-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; border-bottom: 1px solid var(--border-color); }
+        #messages { flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; }
+        #messages::-webkit-scrollbar { width: 8px; }
+        #messages::-webkit-scrollbar-track { background: transparent; }
+        #messages::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 4px; }
+        .message-wrapper { display: flex; flex-direction: column; }
+        .message-wrapper.mine { align-items: flex-end; }
+        .message-wrapper.other { align-items: flex-start; }
+        .message { padding: 8px 12px; border-radius: 10px; max-width: 85%; word-wrap: break-word; position: relative; }
+        .message.mine { background-color: var(--my-message-bg); }
+        .message.other { background-color: var(--other-message-bg); }
+        .message-actions { display: none; position: absolute; top: -15px; right: 10px; background: #333; border-radius: 10px; padding: 2px 5px; }
+        .message:hover .message-actions { display: block; }
+        .action-btn { background: none; border: none; color: white; cursor: pointer; font-size: 14px; padding: 2px; }
+        .reply-snippet { background: rgba(0,0,0,0.2); padding: 5px 8px; margin-bottom: 5px; border-radius: 5px; border-left: 2px solid var(--primary-color); cursor: pointer; text-align: left; }
+        .reply-snippet p { margin: 0; font-size: 0.8em; opacity: 0.8; }
+        .reactions { display: flex; gap: 5px; margin-top: 5px; }
+        .reaction { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; font-size: 0.8em; cursor: pointer; }
+        .reaction.reacted { background: var(--primary-color); color: black; }
+        #emoji-picker { display: none; position: absolute; background: #222; border: 1px solid var(--border-color); padding: 5px; border-radius: 5px; z-index: 100; }
+        .emoji { cursor: pointer; font-size: 1.2em; padding: 2px; }
+        #reply-preview { display: none; padding: 8px 15px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        #message-form { display: flex; padding-top: 10px; }
     </style>
 </head>
 <body>
-    <canvas id="matrix-canvas"></canvas>
-    <div id="notification"></div>
     <div class="container" id="main-container">
-        <!-- Morse Code View -->
-        <div id="morse-container">
-            <h1 id="main-title">Morse Code Decryptor</h1>
-            <p id="subtitle">Engage the system. Encrypt or decrypt transmissions.</p>
-            <form id="code-form">
-                <input type="text" id="textInput" name="textInput" placeholder="[Input sequence... or type 'help']" autocomplete="off">
-                <button type="submit">Execute</button>
-                <a href="/guide" class="button-link">Guide</a>
-            </form>
-            <div id="result-container" style="display: none;">
-                <div class="output" id="output"></div>
-                <button type="button" id="copy-button">Copy Output</button>
-            </div>
-        </div>
-
-        <!-- Chat Login View -->
-        <div id="chat-login-container">
-             <h1>Secure Chat</h1>
-             <button id="create-room">Create Room</button>
-             <input type="text" id="room-code-input" placeholder="Enter Room Code...">
-             <button id="join-room">Join</button>
-        </div>
-
-        <!-- Chat UI View -->
         <div id="chat-ui-container">
-             <div id="chat-header">
+            <div id="chat-header">
                 <span id="room-display"></span>
                 <button id="leave-room">Leave</button>
             </div>
             <div id="messages"></div>
+            <div id="reply-preview">
+                <p>Replying to <b id="reply-agent"></b></p>
+                <span id="reply-text"></span>
+                <button id="cancel-reply">X</button>
+            </div>
             <form id="message-form">
-                <input type="text" id="message-input" placeholder="Send a message... or a command?">
+                <input type="text" id="message-input" placeholder="Send a message...">
                 <button type="submit">Send</button>
             </form>
         </div>
     </div>
-    
+    <div id="emoji-picker"></div>
+
 <script>
-    // --- Global State ---
-    let currentRoom = null;
-    let agentName = null;
-    let chatInterval = null;
-    let isRequestPending = false;
-    let displayedMessagesCount = 0;
+let currentRoom = null, agentName = null, chatInterval = null;
+let replyingToMessageId = null;
+let messagesData = [];
 
-    // --- DOM Elements ---
-    const morseContainer = document.getElementById('morse-container');
-    const chatLoginContainer = document.getElementById('chat-login-container');
-    const chatUiContainer = document.getElementById('chat-ui-container');
-    const roomDisplay = document.getElementById('room-display');
+const messagesDiv = document.getElementById('messages');
+const messageForm = document.getElementById('message-form');
+const messageInput = document.getElementById('message-input');
+const replyPreview = document.getElementById('reply-preview');
+const emojiPicker = document.getElementById('emoji-picker');
+const availableEmojis = ['👍', '❤️', '😂', '😯', '😢', '😡'];
 
-    // --- Matrix Rain Effect ---
-    const canvas = document.getElementById('matrix-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const alphabet = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    const fontSize = 16;
-    const columns = canvas.width / fontSize;
-    const rainDrops = Array.from({ length: columns }).fill(1);
-    let matrixPrimaryColor = '#00ff00';
+// Dummy startChatSession for demonstration
+function startChatSession(room, agent) {
+    currentRoom = room; agentName = agent;
+    document.getElementById('chat-ui-container').style.display = 'flex';
+    loadMessages();
+    chatInterval = setInterval(loadMessages, 3000);
+}
+
+messageForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    const formData = new FormData();
+    formData.append('room_code', currentRoom);
+    formData.append('agent_name', agentName);
+    formData.append('message', text);
+    if (replyingToMessageId) {
+        formData.append('reply_to', replyingToMessageId);
+    }
+
+    fetch('/chat/send', { method: 'POST', body: formData })
+        .then(() => {
+            messageInput.value = '';
+            cancelReplyMode();
+            loadMessages(true);
+        });
+});
+document.getElementById('cancel-reply').addEventListener('click', cancelReplyMode);
+
+function loadMessages(forceScroll = false) {
+    if (!currentRoom) return;
+    fetch(`/chat/messages?room_code=${currentRoom}&agent_name=${agentName}`)
+        .then(res => res.json()).then(data => {
+            if (data.status !== 'success') return;
+            messagesData = data.messages;
+            const shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30);
+            messagesDiv.innerHTML = '';
+            messagesData.forEach(msg => messagesDiv.appendChild(createMessageElement(msg)));
+            if (shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+}
+
+function createMessageElement(msg) {
+    const wrapper = document.createElement('div');
+    wrapper.id = `msg-${msg.id}`;
+    wrapper.className = `message-wrapper ${msg.agent === agentName ? 'mine' : 'other'}`;
+
+    const messageEl = document.createElement('div');
+    messageEl.className = `message ${msg.agent === agentName ? 'mine' : 'other'}`;
+
+    if (msg.reply_to) {
+        const originalMsg = messagesData.find(m => m.id === msg.reply_to);
+        if (originalMsg) {
+            const snippet = document.createElement('div');
+            snippet.className = 'reply-snippet';
+            snippet.innerHTML = `<p><strong>${originalMsg.agent}</strong></p><p>${getSnippetText(originalMsg.text)}</p>`;
+            snippet.onclick = () => document.getElementById(`msg-${msg.reply_to}`).scrollIntoView({ behavior: 'smooth' });
+            messageEl.appendChild(snippet);
+        }
+    }
+
+    const textEl = document.createElement('span');
+    textEl.textContent = msg.text;
+    messageEl.appendChild(textEl);
     
-    const draw = () => {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = matrixPrimaryColor;
-        ctx.font = fontSize + 'px monospace';
-        rainDrops.forEach((_, i) => {
-            const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-            ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-            if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                rainDrops[i] = 0;
-            }
-            rainDrops[i]++;
-        });
-    };
-    let matrixInterval = setInterval(draw, 33);
+    const actions = document.createElement('div');
+    actions.className = 'message-actions';
+    const replyBtn = document.createElement('button');
+    replyBtn.innerHTML = '↪️'; replyBtn.className = 'action-btn';
+    replyBtn.onclick = () => setReplyMode(msg.id);
+    actions.appendChild(replyBtn);
+    const reactBtn = document.createElement('button');
+    reactBtn.innerHTML = '😊'; reactBtn.className = 'action-btn';
+    reactBtn.onclick = (e) => showEmojiPicker(msg.id, e);
+    actions.appendChild(reactBtn);
+    messageEl.appendChild(actions);
 
-    // --- View Management ---
-    function showView(view) {
-        morseContainer.style.display = 'none';
-        chatLoginContainer.style.display = 'none';
-        chatUiContainer.style.display = 'none';
-        view.style.display = view === chatUiContainer ? 'flex' : 'block';
+    if (Object.keys(msg.reactions).length > 0) {
+        const reactionsEl = document.createElement('div');
+        reactionsEl.className = 'reactions';
+        for (const [emoji, agents] of Object.entries(msg.reactions)) {
+            const reaction = document.createElement('span');
+            reaction.className = `reaction ${agents.includes(agentName) ? 'reacted' : ''}`;
+            reaction.textContent = `${emoji} ${agents.length}`;
+            reaction.onclick = () => sendReaction(msg.id, emoji);
+            reactionsEl.appendChild(reaction);
+        }
+        messageEl.appendChild(reactionsEl);
     }
 
-    // --- Morse Code Section ---
-    document.getElementById('code-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const textInput = document.getElementById('textInput');
-        const text = textInput.value.trim();
-        const lowerCaseText = text.toLowerCase();
-        
-        if (lowerCaseText === 'enter chat') {
-            showView(chatLoginContainer);
-            textInput.value = '';
-            return;
-        }
+    wrapper.appendChild(messageEl);
+    return wrapper;
+}
 
-        if (lowerCaseText === 'help' || lowerCaseText === 'guide') {
-            window.location.href = '/guide';
-            return;
-        }
+function setReplyMode(messageId) {
+    const message = messagesData.find(m => m.id === messageId);
+    if (!message) return;
+    replyingToMessageId = messageId;
+    document.getElementById('reply-agent').textContent = message.agent;
+    document.getElementById('reply-text').textContent = getSnippetText(message.text);
+    replyPreview.style.display = 'block';
+    messageInput.focus();
+}
 
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const formData = new FormData();
-        formData.append('textInput', text);
+function cancelReplyMode() {
+    replyingToMessageId = null;
+    replyPreview.style.display = 'none';
+}
 
-        textInput.disabled = true;
-        submitBtn.disabled = true;
-
-        fetch('/code', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => {
-            const outputDiv = document.getElementById('output');
-            const resultContainer = document.getElementById('result-container');
-            outputDiv.textContent = data.message || data.result;
-            outputDiv.className = 'output';
-            if (data.status === 'success') {
-                document.getElementById('copy-button').style.display = 'inline-block';
-            } else {
-                outputDiv.classList.add('error');
-                document.getElementById('copy-button').style.display = 'none';
-            }
-            resultContainer.style.display = 'block';
-        })
-        .catch(error => console.error('Error:', error))
-        .finally(() => {
-            textInput.disabled = false;
-            submitBtn.disabled = false;
-            textInput.value = '';
-        });
+function showEmojiPicker(messageId, event) {
+    emojiPicker.innerHTML = '';
+    availableEmojis.forEach(emoji => {
+        const emojiEl = document.createElement('span');
+        emojiEl.className = 'emoji';
+        emojiEl.textContent = emoji;
+        emojiEl.onclick = () => { sendReaction(messageId, emoji); emojiPicker.style.display = 'none'; };
+        emojiPicker.appendChild(emojiEl);
     });
+    const rect = event.target.getBoundingClientRect();
+    emojiPicker.style.left = `${rect.left}px`;
+    emojiPicker.style.top = `${rect.top - emojiPicker.offsetHeight - 5}px`;
+    emojiPicker.style.display = 'block';
+}
 
-    // --- Chat Section ---
-    function startChatSession(roomCode, assignedAgent) {
-        currentRoom = roomCode;
-        agentName = assignedAgent;
-        roomDisplay.textContent = `Room: ${currentRoom}`;
-        showView(chatUiContainer);
-        loadMessages();
-        if (chatInterval) clearInterval(chatInterval);
-        chatInterval = setInterval(loadMessages, 3000);
-        displayedMessagesCount = 0;
-    }
+function sendReaction(messageId, emoji) {
+    const formData = new FormData();
+    formData.append('room_code', currentRoom);
+    formData.append('agent_name', agentName);
+    formData.append('message_id', messageId);
+    formData.append('emoji', emoji);
+    fetch('/chat/react', { method: 'POST', body: formData })
+        .then(() => loadMessages());
+}
 
-    function endChatSession() {
-        if (chatInterval) clearInterval(chatInterval);
-        currentRoom = null;
-        agentName = null;
-        showView(morseContainer);
-    }
+function getSnippetText(text) {
+    if (text.startsWith('[IMAGE]')) return 'Image';
+    if (text.startsWith('[VIDEO]')) return 'Video';
+    return text.length > 50 ? text.substring(0, 50) + '...' : text;
+}
 
-    roomDisplay.addEventListener('click', () => {
-        if (currentRoom) {
-            navigator.clipboard.writeText(currentRoom).then(() => {
-                showNotification("Room code copied to clipboard!");
-            });
-        }
-    });
+window.addEventListener('click', (e) => { if (!emojiPicker.contains(e.target) && !e.target.matches('.action-btn')) emojiPicker.style.display = 'none'; });
 
-    document.getElementById('create-room').addEventListener('click', () => {
-        if (isRequestPending) return;
-        isRequestPending = true;
-        const createBtn = document.getElementById('create-room');
-        const joinBtn = document.getElementById('join-room');
-        createBtn.disabled = true;
-        joinBtn.disabled = true;
-
-        fetch('/chat/create', { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                startChatSession(data.room_code, data.agent_name);
-                showNotification(`Room Created! Code: ${data.room_code}`);
-            }
-        })
-        .catch(error => console.error('Error:', error))
-        .finally(() => {
-            isRequestPending = false;
-            createBtn.disabled = false;
-            joinBtn.disabled = false;
-        });
-    });
-
-    document.getElementById('join-room').addEventListener('click', () => {
-        if (isRequestPending) return;
-        const roomCodeInput = document.getElementById('room-code-input');
-        const roomCode = roomCodeInput.value.trim();
-        if (roomCode) {
-            isRequestPending = true;
-            const createBtn = document.getElementById('create-room');
-            const joinBtn = document.getElementById('join-room');
-            roomCodeInput.disabled = true;
-            createBtn.disabled = true;
-            joinBtn.disabled = true;
-            
-            const formData = new FormData();
-            formData.append('room_code', roomCode);
-
-            fetch('/chat/join', { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    startChatSession(roomCode, data.agent_name);
-                    showNotification(`Joined Room. You are Agent ${data.agent_name}`);
-                } else {
-                    showNotification(data.message, 'error');
-                }
-            })
-            .catch(error => console.error('Error:', error))
-            .finally(() => {
-                isRequestPending = false;
-                roomCodeInput.disabled = false;
-                createBtn.disabled = false;
-                joinBtn.disabled = false;
-                roomCodeInput.value = '';
-            });
-        }
-    });
-
-    document.getElementById('leave-room').addEventListener('click', endChatSession);
-
-    document.getElementById('message-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (isRequestPending) return;
-        const messageInput = document.getElementById('message-input');
-        let message = messageInput.value.trim();
-        const lowerCaseMessage = message.toLowerCase();
-
-        if (lowerCaseMessage.startsWith('/encrypt ')) {
-            const plainText = message.substring(9);
-            message = `[ENCRYPTED]${btoa(plainText)}`;
-        }
-
-        if (message && currentRoom && agentName) {
-            isRequestPending = true;
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            messageInput.disabled = true;
-            submitBtn.disabled = true;
-
-            const formData = new FormData();
-            formData.append('room_code', currentRoom);
-            formData.append('agent_name', agentName);
-            formData.append('message', message);
-
-            fetch('/chat/send', { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    messageInput.value = '';
-                    loadMessages(true); 
-                }
-            })
-            .catch(error => console.error('Error:', error))
-            .finally(() => {
-                isRequestPending = false;
-                messageInput.disabled = false;
-                submitBtn.disabled = false;
-                messageInput.focus();
-            });
-        }
-    });
-
-    function loadMessages(forceScroll = false) {
-        if (!currentRoom) return;
-        fetch(`/chat/messages?room_code=${currentRoom}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const messagesDiv = document.getElementById('messages');
-                const shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30);
-                
-                if (data.messages.length > displayedMessagesCount) {
-                    const newMessages = data.messages.slice(displayedMessagesCount);
-                    newMessages.forEach((msg, index) => {
-                        setTimeout(() => {
-                            const messageEl = createMessageElement(msg);
-                            messagesDiv.appendChild(messageEl);
-                            if (shouldScroll) {
-                                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                            }
-                        }, index * 200);
-                    });
-                    displayedMessagesCount = data.messages.length;
-                } else if (data.messages.length < displayedMessagesCount) {
-                    messagesDiv.innerHTML = '';
-                    data.messages.forEach(msg => {
-                        const messageEl = createMessageElement(msg);
-                        messagesDiv.appendChild(messageEl);
-                    });
-                    if(shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                    displayedMessagesCount = data.messages.length;
-                }
-            }
-        });
-    }
-
-    function createMessageElement(msg) {
-        const messageEl = document.createElement('div');
-        messageEl.classList.add('message', msg.agent === agentName ? 'mine' : 'other');
-
-        const agentEl = document.createElement('span');
-        agentEl.className = 'agent';
-        agentEl.textContent = msg.agent;
-
-        const textEl = document.createElement('span');
-        textEl.className = 'text';
-        
-        if (msg.text.startsWith('[ENCRYPTED]')) {
-            const encryptedData = msg.text.substring(11);
-            textEl.textContent = encryptedData;
-            textEl.classList.add('encrypted');
-            try {
-                const decryptedText = atob(encryptedData);
-                messageEl.addEventListener('click', () => {
-                    textEl.textContent = decryptedText;
-                    textEl.classList.remove('encrypted');
-                }, { once: true });
-            } catch (e) { 
-                textEl.textContent = '[Decryption Error]';
-                textEl.classList.remove('encrypted');
-            }
-        } else {
-            textEl.textContent = msg.text;
-        }
-
-        messageEl.appendChild(agentEl);
-        messageEl.appendChild(textEl);
-        return messageEl;
-    }
-
-    // --- General Functions ---
-    const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-    let konamiIndex = 0;
-    document.addEventListener('keydown', (e) => {
-        if (document.body.classList.contains('secret-agent')) return;
-        // Ignore key presses if an input field is focused
-        if (e.target.tagName.toLowerCase() === 'input') return;
-
-        if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
-            konamiIndex++;
-            if (konamiIndex === konamiCode.length) {
-                activateSecretAgentMode();
-                konamiIndex = 0;
-            }
-        } else {
-            konamiIndex = 0;
-        }
-    });
-
-    function activateSecretAgentMode() {
-        document.body.classList.add('secret-agent');
-        matrixPrimaryColor = '#ff0000';
-        showNotification('SECRET AGENT MODE ACTIVATED');
-    }
-
-    function showNotification(message, type = 'success') {
-        const notification = document.getElementById('notification');
-        notification.textContent = message;
-        notification.style.borderColor = type === 'error' ? 'var(--error-color)' : 'var(--notification-border)';
-        notification.style.opacity = 1;
-        notification.style.transform = 'translateX(-50%) translateY(0)';
-        setTimeout(() => {
-            notification.style.opacity = 0;
-            notification.style.transform = 'translateX(-50%) translateY(100px)';
-        }, 5000);
-    }
-
-    document.getElementById('copy-button').addEventListener('click', () => {
-        const outputText = document.getElementById('output').textContent;
-        navigator.clipboard.writeText(outputText).then(() => {
-            showNotification("Output copied to clipboard.");
-        }, () => {
-            showNotification("Failed to copy output.", 'error');
-        });
-    });
-
-    // Initial Setup
-    showView(morseContainer);
-
+// To run this demo, call this function manually from the console, e.g.:
+// startChatSession('demo-room-123', 'Agent Smith');
 </script>
 </body>
 </html>
