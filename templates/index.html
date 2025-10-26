@@ -14,7 +14,11 @@
             --shadow-color: rgba(0, 255, 0, 0.5);
             --text-color: #e5e5e5;
             --error-color: #ff4d4d;
-            --notification-bg: rgba(0, 255, 0, 0.1);
+            --notification-bg: rgba(0, 255, 0, 0.2);
+            --notification-border: #00ff00;
+            --chat-bg: rgba(0, 0, 0, 0.7);
+            --my-message-bg: rgba(0, 255, 0, 0.15);
+            --other-message-bg: rgba(255, 255, 255, 0.1);
         }
 
         body.secret-agent {
@@ -22,7 +26,9 @@
             --shadow-color: rgba(255, 0, 0, 0.5);
             --container-bg: rgba(255, 0, 0, 0.05);
             --border-color: rgba(255, 0, 0, 0.2);
-            --notification-bg: rgba(255, 0, 0, 0.1);
+            --notification-bg: rgba(255, 0, 0, 0.2);
+            --notification-border: #ff0000;
+            --my-message-bg: rgba(255, 0, 0, 0.15);
         }
 
         body {
@@ -57,7 +63,7 @@
             box-shadow: 0 0 30px var(--shadow-color);
             animation: fadeIn 1s ease-in-out;
             width: 90%;
-            max-width: 600px;
+            max-width: 700px;
             position: relative;
         }
 
@@ -83,35 +89,12 @@
             border-width: 0 2px 2px 0;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
         h1 {
             font-family: 'Orbitron', sans-serif;
             color: var(--primary-color);
             margin-bottom: 20px;
             font-size: 2.5rem;
             animation: flicker 1.5s infinite alternate, glitch 5s linear infinite;
-        }
-
-        @keyframes flicker {
-            0%, 18%, 22%, 25%, 53%, 57%, 100% {
-                text-shadow:
-                0 0 4px var(--primary-color),
-                0 0 11px var(--primary-color),
-                0 0 19px var(--primary-color),
-                0 0 40px var(--shadow-color),
-                0 0 80px var(--shadow-color);
-            }
-            20%, 24%, 55% { text-shadow: none; }    
-        }
-
-        @keyframes glitch {
-            2%,64%{ transform: translate(2px,0) skew(0deg); }
-            4%,60%{ transform: translate(-2px,0) skew(0deg); }
-            62%{ transform: translate(0,0) skew(5deg); }
         }
 
         p {
@@ -134,11 +117,10 @@
             text-shadow: 0 0 3px var(--primary-color);
             transition: all 0.3s ease;
         }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 15px var(--shadow-color);
+        
+        input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         button {
@@ -155,10 +137,16 @@
             text-shadow: 0 0 5px var(--primary-color);
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: var(--primary-color);
             color: var(--background-color);
             box-shadow: 0 0 20px var(--shadow-color);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: var(--primary-color);
         }
 
         .output {
@@ -173,93 +161,136 @@
             word-wrap: break-word;
             white-space: pre-wrap;
             min-height: 50px;
-            animation: fadeInOutput 0.5s ease-in-out;
         }
         
         .output.error {
             color: var(--error-color);
-            text-shadow: 0 0 5px var(--error-color);
-            border-color: rgba(255, 77, 77, 0.4);
-        }
-
-        @keyframes fadeInOutput {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         #notification {
             position: fixed;
             bottom: 20px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) translateY(100px);
             background-color: var(--notification-bg);
             color: var(--primary-color);
-            padding: 10px 20px;
-            border-radius: 5px;
-            border: 1px solid var(--border-color);
+            padding: 15px 25px;
+            border-radius: 8px;
+            border: 2px solid var(--notification-border);
             z-index: 1000;
             opacity: 0;
-            transition: opacity 0.5s;
+            transition: opacity 0.5s, transform 0.5s;
+            box-shadow: 0 0 15px var(--shadow-color);
+            font-size: 1.1rem;
+            font-weight: bold;
         }
 
         /* Chat Styles */
-        #chat-container {
+        #chat-login-container, #chat-ui-container {
+            display: none;
+            width: 100%;
+        }
+
+        #chat-ui-container {
             display: none;
             flex-direction: column;
-            height: 80%;
-            width: 100%;
+            height: 80vh;
+        }
+        
+        #chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 10px;
+            background: var(--container-bg);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+        }
+
+        #room-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            color: var(--primary-color);
         }
 
         #messages {
             flex-grow: 1;
             overflow-y: auto;
             border: 1px solid var(--border-color);
-            padding: 10px;
+            padding: 15px;
             margin-bottom: 10px;
-            background: var(--container-bg);
+            background: var(--chat-bg);
+            display: flex;
+            flex-direction: column;
         }
 
         .message {
+            padding: 8px 12px;
+            border-radius: 10px;
             margin-bottom: 10px;
+            max-width: 70%;
+            word-wrap: break-word;
         }
 
         .message .agent {
             font-weight: bold;
             color: var(--primary-color);
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.9em;
         }
+
+        .message.mine {
+            background-color: var(--my-message-bg);
+            align-self: flex-end;
+            text-align: right;
+        }
+
+        .message.other {
+            background-color: var(--other-message-bg);
+            align-self: flex-start;
+            text-align: left;
+        }
+
     </style>
 </head>
 <body>
     <canvas id="matrix-canvas"></canvas>
     <div id="notification"></div>
     <div class="container" id="main-container">
+        <!-- Morse Code View -->
         <div id="morse-container">
             <h1 id="main-title">Morse Code Decryptor</h1>
             <p id="subtitle">Engage the system. Encrypt or decrypt transmissions.</p>
             <form id="code-form">
-                <input type="text" id="textInput" name="textInput" placeholder="[Input sequence...]" autocomplete="off" aria-label="Input for Morse Code or Text">
-                <button type="submit" id="submit">Execute</button>
+                <input type="text" id="textInput" name="textInput" placeholder="[Input sequence...]" autocomplete="off">
+                <button type="submit">Execute</button>
             </form>
-            <div id="result-container" style="display: none;" role="region" aria-live="polite">
-                    <div class="output" id="output"></div>
-                    <button type="button" id="copy-button" onclick="copyToClipboard()">Copy Output</button>
+            <div id="result-container" style="display: none;">
+                <div class="output" id="output"></div>
+                <button type="button" id="copy-button">Copy Output</button>
             </div>
         </div>
 
-        <div id="chat-container">
-            <h1>Secure Chat</h1>
-            <div id="chat-login">
-                <button id="create-room">Create Room</button>
-                <input type="text" id="room-code-input" placeholder="Enter Room Code...">
-                <button id="join-room">Join</button>
+        <!-- Chat Login View -->
+        <div id="chat-login-container">
+             <h1>Secure Chat</h1>
+             <button id="create-room">Create Room</button>
+             <input type="text" id="room-code-input" placeholder="Enter Room Code...">
+             <button id="join-room">Join</button>
+        </div>
+
+        <!-- Chat UI View -->
+        <div id="chat-ui-container">
+             <div id="chat-header">
+                <span id="room-display"></span>
+                <button id="leave-room">Leave</button>
             </div>
-            <div id="chat-ui" style="display: none;">
-                <div id="messages"></div>
-                <form id="message-form">
-                    <input type="text" id="message-input" placeholder="Send a message...">
-                    <button type="submit">Send</button>
-                </form>
-            </div>
+            <div id="messages"></div>
+            <form id="message-form">
+                <input type="text" id="message-input" placeholder="Send a message...">
+                <button type="submit">Send</button>
+            </form>
         </div>
     </div>
     
@@ -267,159 +298,179 @@
     // --- Global State ---
     let currentRoom = null;
     let agentName = null;
+    let chatInterval = null;
+    let isRequestPending = false;
+
+    // --- DOM Elements ---
+    const morseContainer = document.getElementById('morse-container');
+    const chatLoginContainer = document.getElementById('chat-login-container');
+    const chatUiContainer = document.getElementById('chat-ui-container');
 
     // --- Matrix Rain Effect ---
     const canvas = document.getElementById('matrix-canvas');
     const ctx = canvas.getContext('2d');
-
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    let katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
-    let latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let nums = '0123456789';
-    let alphabet = katakana + latin + nums;
-
+    const alphabet = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     const fontSize = 16;
     const columns = canvas.width / fontSize;
-    const rainDrops = [];
-
-    for (let x = 0; x < columns; x++) {
-        rainDrops[x] = 1;
-    }
-
+    const rainDrops = Array.from({ length: columns }).fill(1);
     let matrixPrimaryColor = '#00ff00';
-
+    
     const draw = () => {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = matrixPrimaryColor;
         ctx.font = fontSize + 'px monospace';
-
-        for (let i = 0; i < rainDrops.length; i++) {
+        rainDrops.forEach((_, i) => {
             const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
             ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-
             if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
                 rainDrops[i] = 0;
             }
             rainDrops[i]++;
-        }
+        });
     };
-
     let matrixInterval = setInterval(draw, 33);
+
+    // --- View Management ---
+    function showView(view) {
+        morseContainer.style.display = 'none';
+        chatLoginContainer.style.display = 'none';
+        chatUiContainer.style.display = 'none';
+        view.style.display = view === chatUiContainer ? 'flex' : 'block';
+    }
 
     // --- Morse Code Section ---
     document.getElementById('code-form').addEventListener('submit', function(event) {
         event.preventDefault();
-
         const textInput = document.getElementById('textInput');
         const text = textInput.value.trim().toLowerCase();
         
         if (text === 'enter chat') {
-            document.getElementById('morse-container').style.display = 'none';
-            document.getElementById('chat-container').style.display = 'flex';
+            showView(chatLoginContainer);
             textInput.value = '';
             return;
         }
 
-        const formData = new FormData(event.target);
-        const outputDiv = document.getElementById('output');
-        const resultContainer = document.getElementById('result-container');
-        const copyButton = document.getElementById('copy-button');
+        const submitBtn = this.querySelector('button[type="submit"]');
+        textInput.disabled = true;
+        submitBtn.disabled = true;
 
-        fetch('/code', {
-            method: 'POST',
-            body: formData
-        })
+        fetch('/code', { method: 'POST', body: new FormData(event.target) })
         .then(response => response.json())
         .then(data => {
+            const outputDiv = document.getElementById('output');
+            const resultContainer = document.getElementById('result-container');
             outputDiv.textContent = data.message || data.result;
+            outputDiv.className = 'output';
             if (data.status === 'success') {
-                outputDiv.classList.remove('error');
-                copyButton.style.display = 'inline-block';
+                document.getElementById('copy-button').style.display = 'inline-block';
             } else {
                 outputDiv.classList.add('error');
-                copyButton.style.display = 'none';
+                document.getElementById('copy-button').style.display = 'none';
             }
             resultContainer.style.display = 'block';
-            textInput.value = ''; // Clear input after submission
         })
-        .catch(error => {
-            console.error('Error:', error);
-            outputDiv.textContent = 'A fatal system error occurred.';
-            outputDiv.classList.add('error');
-            resultContainer.style.display = 'block';
-            copyButton.style.display = 'none';
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            textInput.disabled = false;
+            submitBtn.disabled = false;
+            textInput.value = '';
         });
     });
 
     // --- Chat Section ---
+    function startChatSession(roomCode, assignedAgent) {
+        currentRoom = roomCode;
+        agentName = assignedAgent;
+        document.getElementById('room-display').textContent = `Room: ${currentRoom}`;
+        showView(chatUiContainer);
+        loadMessages();
+        if (chatInterval) clearInterval(chatInterval);
+        chatInterval = setInterval(loadMessages, 3000);
+    }
+
+    function endChatSession() {
+        if (chatInterval) clearInterval(chatInterval);
+        currentRoom = null;
+        agentName = null;
+        showView(morseContainer);
+    }
+
     document.getElementById('create-room').addEventListener('click', () => {
+        if (isRequestPending) return;
+        isRequestPending = true;
+        const createBtn = document.getElementById('create-room');
+        const joinBtn = document.getElementById('join-room');
+        createBtn.disabled = true;
+        joinBtn.disabled = true;
+
         fetch('/chat/create', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                showNotification(`Room created. Code: ${data.room_code}`);
-                currentRoom = data.room_code;
-                joinChat(currentRoom);
+                startChatSession(data.room_code, data.agent_name);
+                showNotification(`Room Created! Code: ${data.room_code}`);
             }
+        })
+        .catch(error => console.error('Error:', error))
+        .finally(() => {
+            isRequestPending = false;
+            createBtn.disabled = false;
+            joinBtn.disabled = false;
         });
     });
 
     document.getElementById('join-room').addEventListener('click', () => {
-        const roomCode = document.getElementById('room-code-input').value.trim();
+        if (isRequestPending) return;
+        const roomCodeInput = document.getElementById('room-code-input');
+        const roomCode = roomCodeInput.value.trim();
         if (roomCode) {
-            joinChat(roomCode);
+            isRequestPending = true;
+            const createBtn = document.getElementById('create-room');
+            const joinBtn = document.getElementById('join-room');
+            roomCodeInput.disabled = true;
+            createBtn.disabled = true;
+            joinBtn.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('room_code', roomCode);
+
+            fetch('/chat/join', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    startChatSession(roomCode, data.agent_name);
+                    showNotification(`Joined Room. You are Agent ${data.agent_name}`);
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => console.error('Error:', error))
+            .finally(() => {
+                isRequestPending = false;
+                roomCodeInput.disabled = false;
+                createBtn.disabled = false;
+                joinBtn.disabled = false;
+                roomCodeInput.value = '';
+            });
         }
     });
 
-    function joinChat(roomCode) {
-        const formData = new FormData();
-        formData.append('room_code', roomCode);
-
-        fetch('/chat/join', { method: 'POST', body: formData })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                currentRoom = roomCode;
-                agentName = data.agent_name;
-                document.getElementById('chat-login').style.display = 'none';
-                document.getElementById('chat-ui').style.display = 'block';
-                showNotification(`Joined room. You are Agent ${agentName}`);
-                loadMessages();
-            } else {
-                showNotification(data.message);
-            }
-        });
-    }
-
-    function loadMessages() {
-        if (!currentRoom) return;
-
-        fetch(`/chat/messages?room_code=${currentRoom}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const messagesDiv = document.getElementById('messages');
-                messagesDiv.innerHTML = '';
-                data.messages.forEach(msg => {
-                    const messageEl = document.createElement('div');
-                    messageEl.classList.add('message');
-                    messageEl.innerHTML = `<span class="agent">${msg.agent}:</span> ${msg.text}`;
-                    messagesDiv.appendChild(messageEl);
-                });
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }
-        });
-    }
+    document.getElementById('leave-room').addEventListener('click', endChatSession);
 
     document.getElementById('message-form').addEventListener('submit', (e) => {
         e.preventDefault();
+        if (isRequestPending) return;
         const messageInput = document.getElementById('message-input');
         const message = messageInput.value.trim();
-
         if (message && currentRoom && agentName) {
+            isRequestPending = true;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            messageInput.disabled = true;
+            submitBtn.disabled = true;
+
             const formData = new FormData();
             formData.append('room_code', currentRoom);
             formData.append('agent_name', agentName);
@@ -430,21 +481,47 @@
             .then(data => {
                 if (data.status === 'success') {
                     messageInput.value = '';
-                    loadMessages();
+                    loadMessages(true); // Scroll to bottom after sending
                 }
+            })
+            .catch(error => console.error('Error:', error))
+            .finally(() => {
+                isRequestPending = false;
+                messageInput.disabled = false;
+                submitBtn.disabled = false;
+                messageInput.focus();
             });
         }
     });
 
-    setInterval(loadMessages, 3000);
-
+    function loadMessages(forceScroll = false) {
+        if (!currentRoom) return;
+        fetch(`/chat/messages?room_code=${currentRoom}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const messagesDiv = document.getElementById('messages');
+                const shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30);
+                
+                messagesDiv.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const messageEl = document.createElement('div');
+                    messageEl.classList.add('message', msg.agent === agentName ? 'mine' : 'other');
+                    messageEl.innerHTML = `<span class="agent">${msg.agent}</span><span class="text">${msg.text}</span>`;
+                    messagesDiv.appendChild(messageEl);
+                });
+                if(shouldScroll) {
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            }
+        });
+    }
 
     // --- General Functions ---
-
-    // Konami Code
     const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     let konamiIndex = 0;
     document.addEventListener('keydown', (e) => {
+        if (document.body.classList.contains('secret-agent')) return;
         if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
             konamiIndex++;
             if (konamiIndex === konamiCode.length) {
@@ -457,46 +534,34 @@
     });
 
     function activateSecretAgentMode() {
-        document.body.classList.toggle('secret-agent');
-        const mainTitle = document.getElementById('main-title');
-        const subtitle = document.getElementById('subtitle');
-        const outputDiv = document.getElementById('output');
-        const resultContainer = document.getElementById('result-container');
-
-        if (document.body.classList.contains('secret-agent')) {
-            mainTitle.textContent = 'Agent Mode Activated';
-            subtitle.textContent = 'Welcome, Agent. You have a new mission.';
-            matrixPrimaryColor = '#ff0000';
-            outputDiv.textContent = 'MISSION: Decrypt the following message: 💜💙💙💙/💜/💜💙💜💜/💜💙💜💜/💜💜💜💜💜 / 💜💜💜💙/💜💜💜💜💜/💜💙💜/💜💙💜💜/💙💜💜';
-            outputDiv.classList.remove('error');
-            resultContainer.style.display = 'block';
-        } else {
-            mainTitle.textContent = 'Morse Code Decryptor';
-            subtitle.textContent = 'Engage the system. Encrypt or decrypt transmissions.';
-            matrixPrimaryColor = '#00ff00';
-            resultContainer.style.display = 'none';
-        }
+        document.body.classList.add('secret-agent');
+        matrixPrimaryColor = '#ff0000';
+        showNotification('SECRET AGENT MODE ACTIVATED');
     }
 
-    // Clipboard & Notification
-    function showNotification(message) {
+    function showNotification(message, type = 'success') {
         const notification = document.getElementById('notification');
         notification.textContent = message;
+        notification.style.borderColor = type === 'error' ? 'var(--error-color)' : 'var(--notification-border)';
         notification.style.opacity = 1;
+        notification.style.transform = 'translateX(-50%) translateY(0)';
         setTimeout(() => {
             notification.style.opacity = 0;
-        }, 3000);
+            notification.style.transform = 'translateX(-50%) translateY(100px)';
+        }, 5000);
     }
 
-    function copyToClipboard() {
+    document.getElementById('copy-button').addEventListener('click', () => {
         const outputText = document.getElementById('output').textContent;
         navigator.clipboard.writeText(outputText).then(() => {
             showNotification("Output copied to clipboard.");
-        }, (err) => {
-            console.error('Could not copy text: ', err);
-            showNotification("Failed to copy output.");
+        }, () => {
+            showNotification("Failed to copy output.", 'error');
         });
-    }
+    });
+
+    // Initial Setup
+    showView(morseContainer);
 
 </script>
 </body>

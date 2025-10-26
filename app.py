@@ -42,9 +42,10 @@ def generate_room_code():
 def create_chat_room():
     room_code = generate_room_code()
     file_path = os.path.join(CHAT_DIR, f"{room_code}.json")
+    agent_name = random.choice(AGENT_NAMES)
     with open(file_path, 'w') as f:
         json.dump({"messages": []}, f)
-    return jsonify({'status': 'success', 'room_code': room_code})
+    return jsonify({'status': 'success', 'room_code': room_code, 'agent_name': agent_name})
 
 @app.route('/chat/join', methods=['POST'])
 def join_chat_room():
