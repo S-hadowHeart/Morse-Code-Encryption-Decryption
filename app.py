@@ -1,18 +1,27 @@
 from flask import Flask, render_template, request, jsonify
 from morse3 import Morse as m
+import random
 
 app = Flask(__name__)
 
 # Easter eggs dictionary
 EASTER_EGGS = {
-    "hello world": "💜💙💙💙/💜/💜💙💜💜/💜💙💜💜/💜💜💜💜💜 / 💜💜💜💙/💜💜💜💜💜/💜💙💜/💜💙💜💜/💙💜💜",
+    "hello world": ".... . .-.. .-.. --- / .-- --- .-. .-.. -..",
     "the matrix": "AGENT SMITH: 'Mr. Anderson...'",
     "sudo rm -rf /": "COMMAND NOT RECOGNIZED. SYSTEM INTEGRITY IS SECURE.",
     "shadowheart": "CREATOR OF THIS UNIVERSE.",
-    "never gonna give you up": "....-./---/-.--/./.../--.-/--/---/-./-./.-/--./---/-./-./.-/--./../...-/./-.--/---/..-/..-/--./--./---/-./-./.-/.-.././-/./-.--/---/..-/ -../---/.--/-.",
+    "never gonna give you up": "-. . ...- . .-. / --. --- -. -. .- / --. .. ...- . / -.-- --- ..- / ..- .--.",
     "tell me a joke": "Why do programmers prefer dark mode? Because light attracts bugs.",
-    "what is the meaning of life": "42"
+    "what is the meaning of life": "42",
+    "show themes": "Available themes: 💜💙, ✨💫, 🔥💧, 💀👻"
 }
+
+SYMBOL_THEMES = [
+    {".": "💜", "-": "💙"},
+    {".": "✨", "-": "💫"},
+    {".": "🔥", "-": "💧"},
+    {".": "💀", "-": "👻"},
+]
 
 @app.route('/')
 def index():
@@ -27,9 +36,13 @@ def code():
 
     # Check for Easter eggs
     if text in EASTER_EGGS:
-        return jsonify({'status': 'success', 'result': EASTER_EGGS[text]})
+        result = EASTER_EGGS[text]
+        # For morse code easter eggs, convert to hearts
+        if text in ["hello world", "never gonna give you up"]:
+            result = result.replace(".", "💜").replace("-", "💙")
+        return jsonify({'status': 'success', 'result': result})
 
-    is_morse = any(c in '.-💜💙' for c in text)
+    is_morse = any(c in '.-💜💙✨💫🔥💧💀👻' for c in text)
 
     if is_morse:
         result = decode(text)
@@ -42,6 +55,10 @@ def code():
 
 def encode(a):
     try:
+        theme = random.choice(SYMBOL_THEMES)
+        dot = theme["."]
+        dash = theme["-"]
+
         words = a.split(' ')
         encoded_words = []
         for word in words:
@@ -49,7 +66,7 @@ def encode(a):
             if isinstance(encoded_word, KeyError):
                 invalid_char = str(encoded_word).split("'")[1]
                 return f"Error: Invalid character for encoding: '{invalid_char}'"
-            encoded_word = encoded_word.replace(".", "💜").replace("-", "💙")
+            encoded_word = encoded_word.replace(".", dot).replace("-", dash)
             encoded_words.append(encoded_word)
         return " / ".join(encoded_words)
     except Exception as e:
@@ -57,10 +74,22 @@ def encode(a):
 
 def decode(a):
     try:
-        words = a.split(' / ')
+        # Create a translation table for all symbols
+        translation_table = {
+            "💜": ".", "💙": "-",
+            "✨": ".", "💫": "-",
+            "🔥": ".", "💧": "-",
+            "💀": ".", "👻": "-",
+        }
+        # Use a loop to build the normalized string
+        normalized_input = ""
+        for char in a:
+            normalized_input += translation_table.get(char, char)
+
+        words = normalized_input.split(' / ')
         decoded_words = []
         for word in words:
-            decoded_word = word.replace("💜", ".").replace("💙", "-").strip()
+            decoded_word = word.strip()
             if not decoded_word:
                 continue
             result = m(decoded_word).morseToString()

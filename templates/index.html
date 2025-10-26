@@ -14,6 +14,7 @@
             --shadow-color: rgba(0, 255, 0, 0.5);
             --text-color: #e5e5e5;
             --error-color: #ff4d4d;
+            --notification-bg: rgba(0, 255, 0, 0.1);
         }
 
         body.secret-agent {
@@ -21,6 +22,7 @@
             --shadow-color: rgba(255, 0, 0, 0.5);
             --container-bg: rgba(255, 0, 0, 0.05);
             --border-color: rgba(255, 0, 0, 0.2);
+            --notification-bg: rgba(255, 0, 0, 0.1);
         }
 
         body {
@@ -184,10 +186,26 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
+        #notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--notification-bg);
+            color: var(--primary-color);
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
     </style>
 </head>
 <body>
     <canvas id="matrix-canvas"></canvas>
+    <div id="notification"></div>
     <form id="code-form">
         <div class="container">
             <h1 id="main-title">Morse Code Decryptor</h1>
@@ -291,7 +309,7 @@
     const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
     let konamiIndex = 0;
     document.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === konamiCode[konamiIndex]) {
+        if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
             konamiIndex++;
             if (konamiIndex === konamiCode.length) {
                 activateSecretAgentMode();
@@ -316,26 +334,34 @@
             outputDiv.textContent = 'MISSION: Decrypt the following message: ....-./---/-.--/./.../--.-';
             outputDiv.classList.remove('error');
             resultContainer.style.display = 'block';
-            document.body.style.animation = 'shake 0.5s';
         } else {
             mainTitle.textContent = 'Morse Code Decryptor';
             subtitle.textContent = 'Engage the system. Encrypt or decrypt transmissions.';
-            matrixPrimaryCozlor = '#00ff00';
+            matrixPrimaryColor = '#00ff00';
             resultContainer.style.display = 'none';
-            document.body.style.animation = '';
         }
     }
 
-    // Clipboard
+    // Clipboard & Notification
+    function showNotification(message) {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.style.opacity = 1;
+        setTimeout(() => {
+            notification.style.opacity = 0;
+        }, 2000);
+    }
+
     function copyToClipboard() {
         const outputText = document.getElementById('output').textContent;
         navigator.clipboard.writeText(outputText).then(() => {
-            alert("Output copied to clipboard.");
+            showNotification("Output copied to clipboard.");
         }, (err) => {
             console.error('Could not copy text: ', err);
-            alert("Failed to copy output.");
+            showNotification("Failed to copy output.");
         });
     }
+
 </script>
 </body>
 </html>
