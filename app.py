@@ -6,7 +6,6 @@ import random
 import uuid
 from werkzeug.utils import secure_filename
 from flask import Flask, jsonify, render_template, request, send_from_directory
-from morse3 import Morse as m
 
 app = Flask(__name__)
 
@@ -41,6 +40,15 @@ SYMBOL_THEMES = [
     {".": "🔥", "-": "💧"},
     {".": "💀", "-": "👻"},
 ]
+MORSE_CODE_DICT = {
+    'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
+    'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.',
+    'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+    'Y': '-.--', 'Z': '--..', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+    '6': '-....', '7': '--...', '8': '---..', '9': '----.', '0': '-----', ', ': '--..--', '.': '.-.-.-',
+    '?': '..--..', '/': '-..-.', '-': '-....-', '(': '-.--.', ')': '-.--.-', ' ': '/'
+}
+REVERSED_MORSE_CODE_DICT = {v: k for k, v in MORSE_CODE_DICT.items()}
 
 # --- Main Routes ---
 @app.route('/')
@@ -73,7 +81,7 @@ def code():
             themed_encoded = ''.join(SYMBOL_THEMES[theme_index].get(char, char) for char in encoded)
             return jsonify({'status': 'success', 'result': themed_encoded})
     except (ValueError, IndexError):
-        pass # Not a theme request, proceed
+        pass
 
     if any(c in '.-/' for c in text):
         return jsonify({'status': 'success', 'result': decode(text)})
@@ -126,7 +134,7 @@ def send_message():
     if message_content:
         new_message = {
             "id": str(uuid.uuid4()), "agent": agent_name, "text": message_content,
-            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
             "reactions": {}, "reply_to": reply_to
         }
         with open(file_path, 'r+') as f:
@@ -140,12 +148,23 @@ def send_message():
 def get_messages():
     room_code = request.args.get('room_code')
     agent_name = request.args.get('agent_name')
+    since = request.args.get('since')
+    
     file_path = os.path.join(CHAT_DIR, f"{room_code}.json")
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as f: chat_data = json.load(f)
-        typing_agents = [name for name, status in chat_data.get("typing_status", {}).items() if status and name != agent_name]
-        return jsonify({'status': 'success', 'messages': chat_data['messages'], 'typing_agents': typing_agents})
-    return jsonify({'status': 'error', 'message': 'Invalid room code.'})
+    if not os.path.exists(file_path):
+        return jsonify({'status': 'error', 'message': 'Invalid room code.'})
+
+    with open(file_path, 'r') as f:
+        chat_data = json.load(f)
+
+    if since:
+        messages = [msg for msg in chat_data['messages'] if msg['timestamp'] > since]
+    else:
+        messages = chat_data['messages']
+        
+    typing_agents = [name for name, status in chat_data.get("typing_status", {}).items() if status and name != agent_name]
+    
+    return jsonify({'status': 'success', 'messages': messages, 'typing_agents': typing_agents})
 
 @app.route('/chat/react', methods=['POST'])
 def react_to_message():
@@ -187,11 +206,23 @@ def generate_room_code():
     return '-'.join(''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=4)) for _ in range(3))
 
 def encode(text):
-    return m().encode(text)
+    encoded_message = ''
+    for char in text.upper():
+        if char in MORSE_CODE_DICT:
+            encoded_message += MORSE_CODE_DICT[char] + ' '
+    return encoded_message.strip()
 
 def decode(text):
-    try: return m().decode(text)
-    except Exception: return "<invalid sequence>"
+    text = text.replace('/', ' / ')
+    words = text.split(' / ')
+    decoded_message = ''
+    for word in words:
+        chars = word.split(' ')
+        for char in chars:
+            if char in REVERSED_MORSE_CODE_DICT:
+                decoded_message += REVERSED_MORSE_CODE_DICT[char]
+        decoded_message += ' '
+    return decoded_message.strip()
 
 # --- Main Execution ---
 if __name__ == '__main__':

@@ -103,6 +103,7 @@
 <script>
 // --- Global State & DOM References ---
 var currentRoom=null, agentName=null, chatInterval=null, replyingToMessageId=null, typingTimeout=null, messagesData=[];
+var lastTimestamp = null;
 var morseContainer=document.getElementById('morse-container'), chatLoginContainer=document.getElementById('chat-login-container'), chatUiContainer=document.getElementById('chat-ui-container');
 var resultDisplay = document.getElementById('result-display');
 var messagesDiv=document.getElementById('messages'), messageForm=document.getElementById('message-form'), messageInput=document.getElementById('message-input'), replyPreview=document.getElementById('reply-preview'), emojiPicker=document.getElementById('emoji-picker');
@@ -143,12 +144,48 @@ window.addEventListener('keydown', function(e) {
 // --- Chat Initialization & Core Logic ---
 document.getElementById('create-room').addEventListener('click', function(){ fetch('/chat/create', { method: 'POST' }).then(function(res){ return res.json(); }).then(function(data){ if(data.status==='success') startChatSession(data.room_code, data.agent_name); }); });
 document.getElementById('join-room').addEventListener('click', function(){ var roomCode = document.getElementById('room-code-input').value; if(roomCode) { var fd = new FormData(); fd.append('room_code', roomCode); fetch('/chat/join', { method: 'POST', body: fd }).then(function(res){ return res.json(); }).then(function(data){ if(data.status==='success') startChatSession(roomCode, data.agent_name); else alert(data.message); }); } });
-document.getElementById('leave-room').addEventListener('click', function(){ clearInterval(chatInterval); showView(chatLoginContainer); currentRoom = null; agentName = null; });
+document.getElementById('leave-room').addEventListener('click', function(){ clearInterval(chatInterval); showView(chatLoginContainer); currentRoom = null; agentName = null; messagesData = []; lastTimestamp = null; messagesDiv.innerHTML = '';});
 function startChatSession(room, agent) { currentRoom = room; agentName = agent; document.getElementById('room-display').textContent = 'Room: ' + room; showView(chatUiContainer); loadMessages(true); if (chatInterval) clearInterval(chatInterval); chatInterval = setInterval(loadMessages, 2500); }
-function loadMessages(forceScroll){ if (forceScroll===undefined) forceScroll=false; if (!currentRoom) return; fetch('/chat/messages?room_code=' + currentRoom + '&agent_name=' + agentName).then(function(res){ return res.json(); }).then(function(data){ if (data.status !== 'success') return; messagesData = data.messages; var shouldScroll = forceScroll || (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30); messagesDiv.innerHTML = ''; messagesData.forEach(function(msg){ messagesDiv.appendChild(createMessageElement(msg)); }); if (shouldScroll) messagesDiv.scrollTop = messagesDiv.scrollHeight; updateTypingIndicator(data.typing_agents || []); }); }
+
+function loadMessages(isInitialLoad) {
+    if (!currentRoom) return;
+    let url = '/chat/messages?room_code=' + currentRoom + '&agent_name=' + agentName;
+    if (lastTimestamp && !isInitialLoad) {
+        url += '&since=' + lastTimestamp;
+    }
+
+    fetch(url).then(res => res.json()).then(data => {
+        if (data.status !== 'success' || !data.messages) return;
+
+        const shouldScroll = messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 30;
+
+        if (isInitialLoad) {
+            messagesData = data.messages;
+            messagesDiv.innerHTML = '';
+            messagesData.forEach(msg => messagesDiv.appendChild(createMessageElement(msg)));
+        } else {
+            data.messages.forEach(msg => {
+                if (!messagesData.find(m => m.id === msg.id)) {
+                    messagesData.push(msg);
+                    messagesDiv.appendChild(createMessageElement(msg));
+                }
+            });
+        }
+
+        if (data.messages.length > 0) {
+            lastTimestamp = data.messages[data.messages.length - 1].timestamp;
+        }
+
+        if (isInitialLoad || shouldScroll) {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        updateTypingIndicator(data.typing_agents || []);
+    });
+}
 
 // --- Message Creation & Interaction ---
-messageForm.addEventListener('submit', function(e) { e.preventDefault(); var text = messageInput.value.trim(); var file = document.getElementById('file-input').files[0]; if (!text && !file) return; var fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); if(text) fd.append('message', text); if (replyingToMessageId) fd.append('reply_to', replyingToMessageId); if(file) fd.append('file', file); fetch('/chat/send', { method: 'POST', body: fd }).then(function(){ messageInput.value = ''; document.getElementById('file-input').value = ''; cancelReplyMode(); loadMessages(true); sendTypingStatus(false); clearTimeout(typingTimeout); }); });
+messageForm.addEventListener('submit', function(e) { e.preventDefault(); var text = messageInput.value.trim(); var file = document.getElementById('file-input').files[0]; if (!text && !file) return; var fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); if(text) fd.append('message', text); if (replyingToMessageId) fd.append('reply_to', replyingToMessageId); if(file) fd.append('file', file); fetch('/chat/send', { method: 'POST', body: fd }).then(function(){ messageInput.value = ''; document.getElementById('file-input').value = ''; cancelReplyMode(); loadMessages(); sendTypingStatus(false); clearTimeout(typingTimeout); }); });
 function createMessageElement(msg) { var wrapper = document.createElement('div'); wrapper.id = 'msg-' + msg.id; wrapper.className = 'message-wrapper ' + (msg.agent === agentName ? 'mine' : 'other'); var messageEl = document.createElement('div'); messageEl.className = 'message ' + (msg.agent === agentName ? 'mine' : 'other'); if (msg.reply_to) { var originalMsg = messagesData.find(function(m){ return m.id === msg.reply_to; }); if (originalMsg) { var snippet = document.createElement('div'); snippet.className = 'reply-snippet'; snippet.innerHTML = '<p><strong>' + originalMsg.agent + '</strong></p><p>' + getSnippetText(originalMsg.text) + '</p>'; snippet.onclick = function(){ var el = document.getElementById('msg-' + msg.reply_to); if (el) el.scrollIntoView({ behavior: 'smooth' }); }; messageEl.appendChild(snippet); } } if (msg.text && msg.text.indexOf('[IMAGE]') === 0) { var url = msg.text.substring(7); var img = document.createElement('img'); img.src = url; img.onclick = function(){ openLightbox('image', url); }; messageEl.appendChild(img); } else if (msg.text && msg.text.indexOf('[VIDEO]') === 0) { var url = msg.text.substring(7); var video = document.createElement('video'); video.src = url; video.onclick = function(){ openLightbox('video', url); }; messageEl.appendChild(video); } else { var textEl = document.createElement('span'); textEl.textContent = msg.text; messageEl.appendChild(textEl); } var actions = document.createElement('div'); actions.className = 'message-actions'; var replyBtn = document.createElement('button'); replyBtn.innerHTML = '↪️'; replyBtn.className = 'action-btn'; replyBtn.onclick = function(){ setReplyMode(msg.id); }; actions.appendChild(replyBtn); var reactBtn = document.createElement('button'); reactBtn.innerHTML = '😊'; reactBtn.className = 'action-btn'; reactBtn.onclick = function(e){ showEmojiPicker(msg.id, e); }; actions.appendChild(reactBtn); messageEl.appendChild(actions); if (msg.reactions && Object.keys(msg.reactions).length > 0) { var reactionsEl = document.createElement('div'); reactionsEl.className = 'reactions'; Object.keys(msg.reactions).forEach(function(emoji){ var agents = msg.reactions[emoji] || []; var reaction = document.createElement('span'); reaction.className = 'reaction ' + (agents.indexOf(agentName) !== -1 ? 'reacted' : ''); reaction.textContent = emoji + ' ' + agents.length; reaction.onclick = function(){ sendReaction(msg.id, emoji); }; reactionsEl.appendChild(reaction); }); messageEl.appendChild(reactionsEl); } wrapper.appendChild(messageEl); return wrapper; }
 
 // --- Feature Logic (Replies, Reactions, Typing, Files) ---
