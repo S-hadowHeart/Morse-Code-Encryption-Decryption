@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLASSIFIED INTEL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #00ff00;
+            --background-color: #0a0a0a;
+            --container-bg: rgba(0, 255, 0, 0.05);
+            --border-color: rgba(0, 255, 0, 0.2);
+            --shadow-color: rgba(0, 255, 0, 0.5);
+            --text-color: #e5e5e5;
+        }
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: auto;
+            text-shadow: 0 0 5px var(--shadow-color);
+        }
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .container {
+            text-align: center;
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 30px var(--shadow-color);
+            width: 90%;
+            max-width: 800px;
+            margin: 5% 0;
+        }
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+        p {
+            color: var(--text-color);
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+        button {
+            font-family: 'Orbitron', sans-serif;
+            background-color: transparent;
+            color: var(--primary-color);
+            padding: 10px 20px;
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+            box-shadow: 0 0 20px var(--shadow-color);
+        }
+        .guide-container {
+             text-align: left;
+             padding: 20px;
+        }
+        .guide-section h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .command {
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 2px solid var(--primary-color);
+        }
+        .command-name {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .command-desc {
+            color: var(--text-color);
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-canvas"></canvas>
+    <div class="container">
+        <h1>Operator's Manual</h1>
+        <p>[CLASSIFIED - EYES ONLY]</p>
+        
+        <div class="guide-container">
+
+            <div class="guide-section">
+                <h2>// MAIN TERMINAL COMMANDS</h2>
+                <div class="command">
+                    <span class="command-name">'hello world'</span>
+                    <div class="command-desc">Translates the classic phrase into themed Morse code.</div>
+                </div>
+                <div class="command">
+                    <span class="command-name">'the matrix'</span>
+                    <div class="command-desc">A greeting from an old friend.</div>
+                </div>
+                 <div class="command">
+                    <span class="command-name">'sudo rm -rf /'</span>
+                    <div class="command-desc">System integrity check.</div>
+                </div>
+                <div class="command">
+                    <span class="command-name">'tell me a joke'</span>
+                    <div class="command-desc">Initiates humor protocol.</div>
+                </div>
+                 <div class="command">
+                    <span class="command-name">'what is the meaning of life'</span>
+                    <div class="command-desc">The ultimate answer.</div>
+                </div>
+                <div class="command">
+                    <span class="command-name">'enter chat'</span>
+                    <div class="command-desc">Switches interface to the Secure Chat module.</div>
+                </div>
+                 <div class="command">
+                    <span class="command-name">'help' / 'guide'</span>
+                    <div class="command-desc">Displays this operations manual.</div>
+                </div>
+            </div>
+
+            <div class="guide-section">
+                <h2>// SECURE CHAT DIRECTIVES</h2>
+                <div class="command">
+                    <span class="command-name">/encrypt &lt;message&gt;</span>
+                    <div class="command-desc">Sends the following text as an encrypted payload. Click the received message to decrypt.</div>
+                </div>
+                 <div class="command">
+                    <span class="command-name">Click Room Code</span>
+                    <div class="command-desc">Copies the current room code to the clipboard for exfiltration.</div>
+                </div>
+            </div>
+
+            <div class="guide-section">
+                <h2>// SYSTEM-WIDE PROTOCOLS</h2>
+                <div class="command">
+                    <span class="command-name">Konami Code</span>
+                    <div class="command-desc">Input Sequence: ↑ ↑ ↓ ↓ ← → ← → B A. Activates Secret Agent Mode for a high-contrast, high-stakes experience.</div>
+                </div>
+            </div>
+
+        </div>
+
+        <a href="/"><button>Return to Terminal</button></a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const alphabet = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const rainDrops = Array.from({ length: columns }).fill(1);
+        const draw = () => {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff00';
+            ctx.font = fontSize + 'px monospace';
+            rainDrops.forEach((_, i) => {
+                const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    rainDrops[i] = 0;
+                }
+                rainDrops[i]++;
+            });
+        };
+        setInterval(draw, 33);
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
