@@ -144,7 +144,58 @@
                 height: 100vh;
                 border-radius: 0;
                 margin: 0;
-                padding: 15px;
+                padding: 10px;
+            }
+            
+            #messages {
+                max-height: calc(100vh - 200px);
+            }
+
+            input, button, select {
+                font-size: 16px;  /* Prevent iOS zoom */
+                height: auto;
+                padding: 12px;
+            }
+
+            #message-input {
+                height: 44px;
+                padding-right: 60px;
+            }
+
+            #message-form {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: var(--background-color);
+                padding: 10px;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+                z-index: 100;
+            }
+            
+            #morse-container, #chat-login-container {
+                padding-bottom: 60px;
+            }
+
+            .floating-nav {
+                bottom: 70px;
+            }
+            
+            #chat-header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+                background: var(--background-color);
+                margin: 0;
+                padding: 10px;
+                border-radius: 0;
+            }
+            
+            #chat-ui-container {
+                padding-top: 60px;
+                padding-bottom: 70px;
             }
         }
 
@@ -645,6 +696,7 @@
             <div id="reply-preview"><p>Replying to <b id="reply-agent"></b></p><span id="reply-text"></span><button id="cancel-reply">X</button></div>
             <form id="message-form">
                 <button type="button" id="attach-file-button">+</button>
+                <button type="button" id="gif-button" style="font-size: 18px;">🎞️</button>
                 <input type="file" id="file-input" style="display: none;" accept="image/*,video/*">
                 <input type="text" id="message-input" placeholder="Send a message...">
                 <button type="submit">Send</button>
@@ -653,6 +705,11 @@
     </div>
     <div id="lightbox"><span id="lightbox-close">&times;</span><div id="lightbox-container"></div></div>
     <div id="emoji-picker"></div>
+    <div id="gif-picker">
+        <input type="text" id="gif-search" placeholder="Search GIFs...">
+        <div id="gif-grid"></div>
+        <div id="gif-loading">Loading GIFs...</div>
+    </div>
 
 <script>
 // --- Global State & DOM References ---
@@ -774,6 +831,13 @@ messageForm.addEventListener('submit', function(e) {
     var text = messageInput.value.trim();
     var file = document.getElementById('file-input').files[0];
     if (!text && !file) return;
+    
+    // Disable submit button and input while sending
+    var submitBtn = messageForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    messageInput.disabled = true;
+    submitBtn.innerHTML = '⌛'; // Show loading state
+    
     var fd = new FormData();
     fd.append('room_code', currentRoom);
     fd.append('agent_name', agentName);
@@ -781,10 +845,26 @@ messageForm.addEventListener('submit', function(e) {
     if (replyingToMessageId) fd.append('reply_to', replyingToMessageId);
     if (file) fd.append('file', file);
 
-    fetch('/chat/send', { method: 'POST', body: fd })
-        .then(res => res.json())
+    // Track the input values for retrying
+    const originalText = text;
+    const originalFile = file;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    function sendWithRetry() {
+        fetch('/chat/send', { 
+            method: 'POST', 
+            body: fd 
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
         .then(data => {
             if (data && data.status === 'success') {
+                // Clear inputs on success
                 messageInput.value = '';
                 document.getElementById('file-input').value = '';
                 messageInput.disabled = false;
@@ -792,14 +872,39 @@ messageForm.addEventListener('submit', function(e) {
                 loadMessages();
                 sendTypingStatus(false);
                 clearTimeout(typingTimeout);
+                
+                // Re-enable form
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Send';
             } else {
-                alert((data && data.message) ? data.message : 'Failed to send message');
+                throw new Error(data.message || 'Failed to send message');
             }
         })
         .catch(err => {
-            console.error('Send error', err);
-            alert('Error: Could not send message.');
+            console.error('Send error:', err);
+            if (retryCount < maxRetries) {
+                retryCount++;
+                console.log(`Retrying... (${retryCount}/${maxRetries})`);
+                setTimeout(sendWithRetry, 1000 * retryCount);
+            } else {
+                // Re-enable form for retry
+                submitBtn.disabled = false;
+                messageInput.disabled = false;
+                submitBtn.innerHTML = 'Send';
+                
+                // Keep the original input values
+                messageInput.value = originalText;
+                
+                // Show error with retry option
+                if (confirm('Failed to send message. Retry?')) {
+                    retryCount = 0;
+                    sendWithRetry();
+                }
+            }
         });
+    }
+
+    sendWithRetry();
 });
 function createMessageElement(msg) {
     var wrapper = document.createElement('div');
@@ -848,21 +953,47 @@ function createMessageElement(msg) {
             var textEl = document.createElement('span');
             // Handle encrypted payloads
             if (msg.text && msg.text.indexOf('[ENCRYPTED]') === 0) {
-                textEl.textContent = 'Encrypted message (click to decrypt)';
+                // Show Matrix-like random characters that change
+                const encryptedToken = msg.text.substring(11);
+                const matrixChars = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
+                const scrambledText = Array.from(encryptedToken)
+                    .map(() => matrixChars[Math.floor(Math.random() * matrixChars.length)])
+                    .join('');
+                
+                textEl.innerHTML = `<span style="font-family: monospace; color: var(--primary-color);">${scrambledText}</span><br><small style="color: var(--text-secondary); font-size: 0.8em;">(click to decrypt)</small>`;
                 textEl.style.cursor = 'pointer';
-                textEl.style.textDecoration = 'underline';
+                
+                let isDecrypted = false;
                 textEl.onclick = function() {
-                    // ask server to decrypt
+                    if (isDecrypted) return; // Prevent multiple decryption attempts
+                    
+                    textEl.style.opacity = '0.5';
                     var fd = new FormData();
-                    // send the encrypted token (after the prefix)
-                    fd.append('payload', encodeURIComponent(msg.text.substring(11)));
-                    fetch('/chat/decrypt', { method: 'POST', body: fd }).then(r => r.json()).then(data => {
-                        if (data.status === 'success') {
-                            textEl.textContent = data.result;
-                        } else {
-                            textEl.textContent = 'Encrypted message (cannot decrypt)';
-                        }
-                    }).catch(()=>{ textEl.textContent = 'Encrypted message (error)'; });
+                    fd.append('payload', encodeURIComponent(encryptedToken));
+                    
+                    fetch('/chat/decrypt', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                // Animate the transition
+                                textEl.style.transition = 'all 0.3s ease';
+                                textEl.style.opacity = '0';
+                                setTimeout(() => {
+                                    textEl.textContent = data.result;
+                                    textEl.style.opacity = '1';
+                                    textEl.style.color = 'var(--text-color)';
+                                    textEl.style.cursor = 'default';
+                                    isDecrypted = true;
+                                }, 300);
+                            } else {
+                                textEl.innerHTML = '<span style="color: var(--error-color);">Cannot decrypt message</span>';
+                                textEl.style.opacity = '1';
+                            }
+                        })
+                        .catch(() => {
+                            textEl.innerHTML = '<span style="color: var(--error-color);">Decryption failed</span>';
+                            textEl.style.opacity = '1';
+                        });
                 };
             } else if (msg.text && /^[.\- \/]+$/.test(msg.text)) {
                 // Morse-like content: allow click-to-decode via /code endpoint
@@ -885,6 +1016,13 @@ function createMessageElement(msg) {
             }
             messageEl.appendChild(textEl);
         }
+
+    // Set max-width for media in mobile
+    const mediaElements = messageEl.querySelectorAll('img, video');
+    mediaElements.forEach(element => {
+        element.style.maxWidth = window.innerWidth < 600 ? '90vw' : '250px';
+        element.style.height = 'auto';
+    });
 
     // Actions
     var actions = document.createElement('div');
@@ -922,7 +1060,76 @@ function createMessageElement(msg) {
     return wrapper;
 }
 
-// --- Feature Logic (Replies, Reactions, Typing, Files) ---
+// --- Feature Logic (Replies, Reactions, Typing, Files, GIFs) ---
+let searchTimeout = null;
+const GIPHY_API_KEY = 'k3LYUibhNR8LbZqXZKKrdqUCzSLZsnr0'; // Fallback key
+const GIF_LIMIT = 20;
+
+function searchGifs(query) {
+    const gifGrid = document.getElementById('gif-grid');
+    const loading = document.getElementById('gif-loading');
+    
+    gifGrid.innerHTML = '';
+    loading.style.display = 'block';
+    
+    const endpoint = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=${GIF_LIMIT}&rating=g`;
+    
+    fetch(endpoint)
+        .then(response => response.json())
+        .then(data => {
+            gifGrid.innerHTML = '';
+            data.data.forEach(gif => {
+                const item = document.createElement('div');
+                item.className = 'gif-item';
+                
+                const img = document.createElement('img');
+                img.src = gif.images.fixed_height_small.url; // Preview size
+                img.loading = 'lazy';
+                
+                item.onclick = () => {
+                    // Use original size for actual message
+                    sendGifMessage(gif.images.original.url);
+                    document.getElementById('gif-picker').style.display = 'none';
+                };
+                
+                item.appendChild(img);
+                gifGrid.appendChild(item);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching GIFs:', error);
+            gifGrid.innerHTML = '<div style="color: var(--error-color);">Failed to load GIFs. Please try again.</div>';
+        })
+        .finally(() => {
+            loading.style.display = 'none';
+        });
+}
+
+function sendGifMessage(url) {
+    const fd = new FormData();
+    fd.append('room_code', currentRoom);
+    fd.append('agent_name', agentName);
+    fd.append('message', `/gif ${url}`);
+    
+    fetch('/chat/send', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                loadMessages();
+            }
+        });
+}
+
+document.getElementById('gif-search').addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const query = e.target.value.trim();
+        if (query) {
+            searchGifs(query);
+        }
+    }, 500);
+});
+
 function setReplyMode(messageId) { var message = messagesData.find(function(m){ return m.id === messageId; }); if (!message) return; replyingToMessageId = messageId; document.getElementById('reply-agent').textContent = message.agent; document.getElementById('reply-text').textContent = getSnippetText(message.text); replyPreview.style.display = 'block'; messageInput.focus(); }
 function cancelReplyMode() { replyingToMessageId = null; replyPreview.style.display = 'none'; }
 function showEmojiPicker(messageId, event) { emojiPicker.innerHTML = ''; availableEmojis.forEach(function(emoji){ var emojiEl = document.createElement('span'); emojiEl.className = 'emoji'; emojiEl.textContent = emoji; emojiEl.onclick = function(e){ e.stopPropagation(); sendReaction(messageId, emoji); emojiPicker.style.display = 'none'; }; emojiPicker.appendChild(emojiEl); }); var rect = event.target.getBoundingClientRect(); emojiPicker.style.display = 'block'; emojiPicker.style.left = rect.left + 'px'; emojiPicker.style.top = (rect.top - emojiPicker.offsetHeight - 5) + 'px'; }
@@ -1056,6 +1263,55 @@ function getSnippetText(text) { if (!text) return ''; if (text.indexOf('[IMAGE]'
 function openLightbox(type, url) { lightboxContainer.innerHTML = ''; var element; if (type === 'image') { element = document.createElement('img'); element.src = url; } else if (type === 'video') { element = document.createElement('video'); element.src = url; element.autoplay = true; element.controls = true; } if(element) lightboxContainer.appendChild(element); lightbox.style.display = 'block'; }
 lightboxClose.onclick = function(){ lightbox.style.display = 'none'; };
 window.addEventListener('click', function(e){ if (e.target == lightbox) lightbox.style.display = 'none'; if (emojiPicker.style.display === 'block' && !emojiPicker.contains(e.target) && !e.target.matches('.action-btn')) emojiPicker.style.display = 'none'; });
+
+// --- GIF Button Handler ---
+document.getElementById('gif-button').addEventListener('click', function() {
+    const gifPicker = document.getElementById('gif-picker');
+    const currentDisplay = gifPicker.style.display;
+    
+    // Toggle GIF picker
+    gifPicker.style.display = currentDisplay === 'none' ? 'block' : 'none';
+    
+    // Show trending GIFs initially
+    if (currentDisplay === 'none') {
+        fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${GIF_LIMIT}&rating=g`)
+            .then(response => response.json())
+            .then(data => {
+                const gifGrid = document.getElementById('gif-grid');
+                gifGrid.innerHTML = '';
+                data.data.forEach(gif => {
+                    const item = document.createElement('div');
+                    item.className = 'gif-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = gif.images.fixed_height_small.url;
+                    img.loading = 'lazy';
+                    
+                    item.onclick = () => {
+                        sendGifMessage(gif.images.original.url);
+                        gifPicker.style.display = 'none';
+                    };
+                    
+                    item.appendChild(img);
+                    gifGrid.appendChild(item);
+                });
+            });
+    }
+});
+
+// Close GIF picker when clicking outside
+document.addEventListener('click', function(e) {
+    const gifPicker = document.getElementById('gif-picker');
+    const gifButton = document.getElementById('gif-button');
+    if (!gifPicker.contains(e.target) && e.target !== gifButton) {
+        gifPicker.style.display = 'none';
+    }
+});
+
+// Prevent clicks inside GIF picker from closing it
+document.getElementById('gif-picker').addEventListener('click', function(e) {
+    e.stopPropagation();
+});
 
 // --- Matrix Background ---
 var canvas = document.getElementById('matrix-canvas'); var ctx = canvas.getContext('2d');
