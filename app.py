@@ -5,6 +5,7 @@ import os
 import random
 import uuid
 import hashlib
+import requests
 from functools import wraps
 from werkzeug.utils import secure_filename
 from flask import Flask, jsonify, render_template, request, send_from_directory, session
@@ -165,7 +166,38 @@ def send_message():
         file_ext = filename.rsplit('.', 1)[1].lower()
         if file_ext in {'png', 'jpg', 'jpeg', 'gif'}: message_content = f"[IMAGE]{file_url}"
         elif file_ext in {'mp4', 'mov', 'avi'}: message_content = f"[VIDEO]{file_url}"
-    elif message_text: message_content = message_text
+    elif message_text:
+        # Giphy integration: /gif <gif_id>
+        if message_text.startswith('/gif '):
+            gif_id = message_text.split(' ', 1)[1].strip()
+            if gif_id:
+                giphy_key = os.environ.get('GIPHY_API_KEY', 'k3LYUibhNR8LbZqXZKKrdqUCzSLZsnr0')
+                try:
+                    resp = requests.get(f'https://api.giphy.com/v1/gifs/{gif_id}', params={'api_key': giphy_key}, timeout=5)
+                    if resp.status_code == 200:
+                        j = resp.json()
+                        gif_url = j.get('data', {}).get('images', {}).get('original', {}).get('url')
+                        if gif_url:
+                            message_content = f'[GIF]{gif_url}'
+                        else:
+                            return jsonify({'status': 'error', 'message': 'GIF URL not found.'})
+                    else:
+                        return jsonify({'status': 'error', 'message': 'GIF not found.'})
+                except Exception:
+                    return jsonify({'status': 'error', 'message': 'Failed to fetch GIF.'})
+            else:
+                return jsonify({'status': 'error', 'message': 'GIF id missing.'})
+        # Allow chat-level encryption with the command: /encrypt <message>
+        elif message_text.startswith('/encrypt '):
+            payload = message_text[len('/encrypt '):]
+            try:
+                encrypted = encrypt_message(payload)
+                # store as a readable token prefixed with marker
+                message_content = '[ENCRYPTED]' + encrypted.decode()
+            except Exception:
+                message_content = message_text
+        else:
+            message_content = message_text
 
     if message_content:
         new_message = {
@@ -179,6 +211,21 @@ def send_message():
             f.seek(0); f.truncate(); json.dump(chat_data, f, indent=2)
         return jsonify({'status': 'success'})
     return jsonify({'status': 'error', 'message': 'Invalid file or empty message.'})
+
+
+@app.route('/chat/decrypt', methods=['POST'])
+def chat_decrypt():
+    payload = request.form.get('payload')
+    if not payload:
+        return jsonify({'status': 'error', 'message': 'Missing payload.'})
+    try:
+        # payload should be the URL-safe base64 string produced by Fernet
+        decrypted = decrypt_message(payload.encode())
+        if decrypted is None:
+            return jsonify({'status': 'error', 'message': 'Decryption failed.'})
+        return jsonify({'status': 'success', 'result': decrypted})
+    except Exception:
+        return jsonify({'status': 'error', 'message': 'Decryption error.'})
 
 @app.route('/chat/messages', methods=['GET'])
 def get_messages():

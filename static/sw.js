@@ -3,9 +3,6 @@ const CACHE_NAME = 'morse-code-cache-v1';
 const urlsToCache = [
     '/',
     '/static/manifest.json',
-    '/static/sounds/dot.mp3',
-    '/static/sounds/dash.mp3',
-    '/static/sounds/notification.mp3',
     '/static/icons/icon-192x192.png',
     '/static/icons/icon-512x512.png'
 ];

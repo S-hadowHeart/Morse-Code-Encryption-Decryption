@@ -8,10 +8,10 @@
     <style>
         :root {
             --primary-color: #00ff00;
-            --background-color: #0a0a0a;
-            --container-bg: rgba(0, 255, 0, 0.05);
-            --border-color: rgba(0, 255, 0, 0.2);
-            --shadow-color: rgba(0, 255, 0, 0.5);
+            --background-color: #070707;
+            --container-bg: rgba(255,255,255,0.03);
+            --border-color: rgba(255,255,255,0.06);
+            --shadow-color: rgba(0, 255, 0, 0.12);
             --text-color: #e5e5e5;
         }
         body {
@@ -40,10 +40,11 @@
             padding: 30px;
             border-radius: 15px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 0 30px var(--shadow-color);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
             width: 90%;
             max-width: 800px;
             margin: 5% 0;
+            backdrop-filter: blur(8px);
         }
         h1 {
             font-family: 'Orbitron', sans-serif;
@@ -150,6 +151,10 @@
                     <span class="command-name">/encrypt &lt;message&gt;</span>
                     <div class="command-desc">Sends the following text as an encrypted payload. Click the received message to decrypt.</div>
                 </div>
+                <div class="command">
+                    <span class="command-name">/gif &lt;giphy_id&gt;</span>
+                    <div class="command-desc">Send a looping GIF from Giphy by ID. Example: <code>/gif k3LYUibhNR8LbZqXZKKrdqUCzSLZsnr0</code></div>
+                </div>
                  <div class="command">
                     <span class="command-name">Click Room Code</span>
                     <div class="command-desc">Copies the current room code to the clipboard for exfiltration.</div>
@@ -175,7 +180,7 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         const alphabet = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        const fontSize = 16;
+    const fontSize = 24;
         const columns = canvas.width / fontSize;
         const rainDrops = Array.from({ length: columns }).fill(1);
         const draw = () => {

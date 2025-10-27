@@ -9,7 +9,6 @@
     <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="/static/js/audio.js"></script>
     <style>
         :root {
             --primary-color: #8A2BE2;
@@ -25,16 +24,17 @@
             --accent-color: #00FFB2;
             --accent-glow: rgba(0, 255, 178, 0.5);
             --background-color: #0F0F1A;
-            --container-bg: rgba(15, 15, 26, 0.95);
-            --surface-1: rgba(138, 43, 226, 0.05);
-            --surface-2: rgba(138, 43, 226, 0.1);
-            --surface-3: rgba(138, 43, 226, 0.15);
-            --border-color: rgba(138, 43, 226, 0.2);
-            --shadow-color: rgba(138, 43, 226, 0.4);
+            /* Glass theme */
+            --container-bg: rgba(255, 255, 255, 0.04);
+            --surface-1: rgba(255, 255, 255, 0.03);
+            --surface-2: rgba(255, 255, 255, 0.05);
+            --surface-3: rgba(255, 255, 255, 0.06);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --shadow-color: rgba(138, 43, 226, 0.12);
             --text-color: #FFFFFF;
             --text-secondary: rgba(255, 255, 255, 0.7);
-            --my-message-bg: rgba(138, 43, 226, 0.15);
-            --other-message-bg: rgba(255, 255, 255, 0.05);
+            --my-message-bg: rgba(255, 255, 255, 0.06);
+            --other-message-bg: rgba(255, 255, 255, 0.03);
             --error-color: #FF4B4B;
             --success-color: #00FFB2;
             --dropdown-bg: rgba(138, 43, 226, 0.1);
@@ -769,7 +769,109 @@ function loadMessages(isInitialLoad) {
 
 // --- Message Creation & Interaction ---
 messageForm.addEventListener('submit', function(e) { e.preventDefault(); var text = messageInput.value.trim(); var file = document.getElementById('file-input').files[0]; if (!text && !file) return; var fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); if(text) fd.append('message', text); if (replyingToMessageId) fd.append('reply_to', replyingToMessageId); if(file) fd.append('file', file); fetch('/chat/send', { method: 'POST', body: fd }).then(function(){ messageInput.value = ''; document.getElementById('file-input').value = ''; cancelReplyMode(); loadMessages(); sendTypingStatus(false); clearTimeout(typingTimeout); }); });
-function createMessageElement(msg) { var wrapper = document.createElement('div'); wrapper.id = 'msg-' + msg.id; wrapper.className = 'message-wrapper ' + (msg.agent === agentName ? 'mine' : 'other'); var messageEl = document.createElement('div'); messageEl.className = 'message ' + (msg.agent === agentName ? 'mine' : 'other'); if (msg.reply_to) { var originalMsg = messagesData.find(function(m){ return m.id === msg.reply_to; }); if (originalMsg) { var snippet = document.createElement('div'); snippet.className = 'reply-snippet'; snippet.innerHTML = '<p><strong>' + originalMsg.agent + '</strong></p><p>' + getSnippetText(originalMsg.text) + '</p>'; snippet.onclick = function(){ var el = document.getElementById('msg-' + msg.reply_to); if (el) el.scrollIntoView({ behavior: 'smooth' }); }; messageEl.appendChild(snippet); } } if (msg.text && msg.text.indexOf('[IMAGE]') === 0) { var url = msg.text.substring(7); var img = document.createElement('img'); img.src = url; img.onclick = function(){ openLightbox('image', url); }; messageEl.appendChild(img); } else if (msg.text && msg.text.indexOf('[VIDEO]') === 0) { var url = msg.text.substring(7); var video = document.createElement('video'); video.src = url; video.onclick = function(){ openLightbox('video', url); }; messageEl.appendChild(video); } else { var textEl = document.createElement('span'); textEl.textContent = msg.text; messageEl.appendChild(textEl); } var actions = document.createElement('div'); actions.className = 'message-actions'; var replyBtn = document.createElement('button'); replyBtn.innerHTML = '↪️'; replyBtn.className = 'action-btn'; replyBtn.onclick = function(){ setReplyMode(msg.id); }; actions.appendChild(replyBtn); var reactBtn = document.createElement('button'); reactBtn.innerHTML = '😊'; reactBtn.className = 'action-btn'; reactBtn.onclick = function(e){ showEmojiPicker(msg.id, e); }; actions.appendChild(reactBtn); messageEl.appendChild(actions); if (msg.reactions && Object.keys(msg.reactions).length > 0) { var reactionsEl = document.createElement('div'); reactionsEl.className = 'reactions'; Object.keys(msg.reactions).forEach(function(emoji){ var agents = msg.reactions[emoji] || []; var reaction = document.createElement('span'); reaction.className = 'reaction ' + (agents.indexOf(agentName) !== -1 ? 'reacted' : ''); reaction.textContent = emoji + ' ' + agents.length; reaction.onclick = function(){ sendReaction(msg.id, emoji); }; reactionsEl.appendChild(reaction); }); messageEl.appendChild(reactionsEl); } wrapper.appendChild(messageEl); return wrapper; }
+function createMessageElement(msg) {
+    var wrapper = document.createElement('div');
+    wrapper.id = 'msg-' + msg.id;
+    wrapper.className = 'message-wrapper ' + (msg.agent === agentName ? 'mine' : 'other');
+
+    var messageEl = document.createElement('div');
+    messageEl.className = 'message ' + (msg.agent === agentName ? 'mine' : 'other');
+
+    // Reply snippet
+    if (msg.reply_to) {
+        var originalMsg = messagesData.find(function(m){ return m.id === msg.reply_to; });
+        if (originalMsg) {
+            var snippet = document.createElement('div');
+            snippet.className = 'reply-snippet';
+            snippet.innerHTML = '<p><strong>' + originalMsg.agent + '</strong></p><p>' + getSnippetText(originalMsg.text) + '</p>';
+            snippet.onclick = function(){ var el = document.getElementById('msg-' + msg.reply_to); if (el) el.scrollIntoView({ behavior: 'smooth' }); };
+            messageEl.appendChild(snippet);
+        }
+    }
+
+    // Images/Videos
+    if (msg.text && msg.text.indexOf('[IMAGE]') === 0) {
+        var url = msg.text.substring(7);
+        var img = document.createElement('img');
+        img.src = url;
+        img.onclick = function(){ openLightbox('image', url); };
+        messageEl.appendChild(img);
+    } else if (msg.text && msg.text.indexOf('[VIDEO]') === 0) {
+        var url = msg.text.substring(7);
+        var video = document.createElement('video');
+        video.src = url;
+        video.onclick = function(){ openLightbox('video', url); };
+        messageEl.appendChild(video);
+    } else if (msg.text && msg.text.indexOf('[GIF]') === 0) {
+        var url = msg.text.substring(5);
+        var gif = document.createElement('img');
+        gif.src = url;
+        gif.style.maxWidth = '480px';
+        gif.style.borderRadius = '6px';
+        gif.loading = 'lazy';
+        // GIFs loop by default; ensure they are visible and clickable to open in lightbox
+        gif.onclick = function(){ openLightbox('image', url); };
+        messageEl.appendChild(gif);
+    } else {
+        var textEl = document.createElement('span');
+        // Handle encrypted payloads
+        if (msg.text && msg.text.indexOf('[ENCRYPTED]') === 0) {
+            textEl.textContent = 'Encrypted message (click to decrypt)';
+            textEl.style.cursor = 'pointer';
+            textEl.style.textDecoration = 'underline';
+            textEl.onclick = function() {
+                // ask server to decrypt
+                var fd = new FormData();
+                fd.append('payload', msg.text.substring(11));
+                fetch('/chat/decrypt', { method: 'POST', body: fd }).then(r => r.json()).then(data => {
+                    if (data.status === 'success') {
+                        textEl.textContent = data.result;
+                    } else {
+                        textEl.textContent = 'Encrypted message (cannot decrypt)';
+                    }
+                }).catch(()=>{ textEl.textContent = 'Encrypted message (error)'; });
+            };
+        } else {
+            textEl.textContent = msg.text;
+        }
+        messageEl.appendChild(textEl);
+    }
+
+    // Actions
+    var actions = document.createElement('div');
+    actions.className = 'message-actions';
+    var replyBtn = document.createElement('button');
+    replyBtn.innerHTML = '↪️';
+    replyBtn.className = 'action-btn';
+    replyBtn.onclick = function(){ setReplyMode(msg.id); };
+    actions.appendChild(replyBtn);
+
+    var reactBtn = document.createElement('button');
+    reactBtn.innerHTML = '😊';
+    reactBtn.className = 'action-btn';
+    reactBtn.onclick = function(e){ showEmojiPicker(msg.id, e); };
+    actions.appendChild(reactBtn);
+
+    messageEl.appendChild(actions);
+
+    // Reactions
+    if (msg.reactions && Object.keys(msg.reactions).length > 0) {
+        var reactionsEl = document.createElement('div');
+        reactionsEl.className = 'reactions';
+        Object.keys(msg.reactions).forEach(function(emoji){
+            var agents = msg.reactions[emoji] || [];
+            var reaction = document.createElement('span');
+            reaction.className = 'reaction ' + (agents.indexOf(agentName) !== -1 ? 'reacted' : '');
+            reaction.textContent = emoji + ' ' + agents.length;
+            reaction.onclick = function(){ sendReaction(msg.id, emoji); };
+            reactionsEl.appendChild(reaction);
+        });
+        messageEl.appendChild(reactionsEl);
+    }
+
+    wrapper.appendChild(messageEl);
+    return wrapper;
+}
 
 // --- Feature Logic (Replies, Reactions, Typing, Files) ---
 function setReplyMode(messageId) { var message = messagesData.find(function(m){ return m.id === messageId; }); if (!message) return; replyingToMessageId = messageId; document.getElementById('reply-agent').textContent = message.agent; document.getElementById('reply-text').textContent = getSnippetText(message.text); replyPreview.style.display = 'block'; messageInput.focus(); }
@@ -911,7 +1013,7 @@ var canvas = document.getElementById('matrix-canvas'); var ctx = canvas.getConte
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 // removed raw backtick character from letters to avoid parser issues in some environments
 var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|]}' .split('');
-var fontSize = 10, columns = canvas.width / fontSize;
+var fontSize = 22, columns = canvas.width / fontSize;
 var drops = Array(Math.floor(columns)).fill(1);
 function drawMatrix() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -942,21 +1044,21 @@ function copyToClipboard(text) {
     });
 }
 
-// Copy output
+// Copy output (using MutationObserver)
 const copyOutputBtn = document.getElementById('copy-output');
-document.getElementById('result-display').addEventListener('DOMSubtreeModified', function() {
-    copyOutputBtn.style.display = this.textContent ? 'inline-block' : 'none';
+const resultDisplayEl = document.getElementById('result-display');
+const observer = new MutationObserver(() => {
+    copyOutputBtn.style.display = resultDisplayEl.textContent && resultDisplayEl.textContent.trim() ? 'inline-block' : 'none';
 });
+observer.observe(resultDisplayEl, { childList: true, characterData: true, subtree: true });
 
 copyOutputBtn.addEventListener('click', function() {
-    const output = document.getElementById('result-display').textContent;
-    if (output) {
-        copyToClipboard(output);
+    const output = resultDisplayEl.textContent;
+    if (output && output.trim()) {
+        copyToClipboard(output.trim());
         const originalText = this.innerHTML;
         this.innerHTML = '✓ Copied!';
-        setTimeout(() => {
-            this.innerHTML = originalText;
-        }, 1500);
+        setTimeout(() => { this.innerHTML = originalText; }, 1500);
     }
 });
 
@@ -1013,11 +1115,11 @@ function enhanceMessageInteractions(messageEl, msg) {
     });
 }
 
-// Enhance the createMessageElement function
-const originalCreateMessageElement = createMessageElement;
+// Enhance the createMessageElement function (safe wrapper)
+const _originalCreateMessageElement = createMessageElement;
 createMessageElement = function(msg) {
-    const wrapper = originalCreateMessageElement(msg);
-    enhanceMessageInteractions(wrapper, msg);
+    const wrapper = _originalCreateMessageElement(msg);
+    try { enhanceMessageInteractions(wrapper, msg); } catch (e) { /* ignore */ }
     return wrapper;
 };
 
@@ -1033,48 +1135,6 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
-
-// --- Audio System ---
-const audioManager = new AudioManager();
-audioManager.init().then(() => {
-    console.log('Audio system initialized');
-});
-
-// Add sound toggle button
-const soundToggleBtn = document.createElement('button');
-soundToggleBtn.innerHTML = '🔊';
-soundToggleBtn.className = 'sound-toggle';
-soundToggleBtn.onclick = () => {
-    const enabled = audioManager.toggle();
-    soundToggleBtn.innerHTML = enabled ? '🔊' : '🔇';
-};
-document.querySelector('.container').appendChild(soundToggleBtn);
-
-// Add sound effects to interactions
-document.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => audioManager.playSound('click', { volume: 0.3 }));
-});
-
-// Play morse code sound when encoding
-const originalCodeHandler = document.getElementById('code-form').onsubmit;
-document.getElementById('code-form').onsubmit = async (e) => {
-    const result = await originalCodeHandler(e);
-    const output = document.getElementById('result-display').textContent;
-    if (output && /^[.\- /]+$/.test(output)) {
-        audioManager.playMorseCode(output);
-    }
-    return result;
-};
-
-// Play notification sound for new messages
-// Enhance createMessageElement with sound
-const enhanceMessageElement = function(msg) {
-    const element = createMessageElement(msg);
-    if (msg.agent !== agentName) {
-        audioManager.playSound('notification', { volume: 0.5 });
-    }
-    return element;
-};
 
 // --- Initial Load ---
 showView(morseContainer);
