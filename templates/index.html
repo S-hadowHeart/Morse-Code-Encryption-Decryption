@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#8A2BE2">
     <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -768,7 +769,38 @@ function loadMessages(isInitialLoad) {
 }
 
 // --- Message Creation & Interaction ---
-messageForm.addEventListener('submit', function(e) { e.preventDefault(); var text = messageInput.value.trim(); var file = document.getElementById('file-input').files[0]; if (!text && !file) return; var fd = new FormData(); fd.append('room_code', currentRoom); fd.append('agent_name', agentName); if(text) fd.append('message', text); if (replyingToMessageId) fd.append('reply_to', replyingToMessageId); if(file) fd.append('file', file); fetch('/chat/send', { method: 'POST', body: fd }).then(function(){ messageInput.value = ''; document.getElementById('file-input').value = ''; cancelReplyMode(); loadMessages(); sendTypingStatus(false); clearTimeout(typingTimeout); }); });
+messageForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var text = messageInput.value.trim();
+    var file = document.getElementById('file-input').files[0];
+    if (!text && !file) return;
+    var fd = new FormData();
+    fd.append('room_code', currentRoom);
+    fd.append('agent_name', agentName);
+    if (text) fd.append('message', text);
+    if (replyingToMessageId) fd.append('reply_to', replyingToMessageId);
+    if (file) fd.append('file', file);
+
+    fetch('/chat/send', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.status === 'success') {
+                messageInput.value = '';
+                document.getElementById('file-input').value = '';
+                messageInput.disabled = false;
+                cancelReplyMode();
+                loadMessages();
+                sendTypingStatus(false);
+                clearTimeout(typingTimeout);
+            } else {
+                alert((data && data.message) ? data.message : 'Failed to send message');
+            }
+        })
+        .catch(err => {
+            console.error('Send error', err);
+            alert('Error: Could not send message.');
+        });
+});
 function createMessageElement(msg) {
     var wrapper = document.createElement('div');
     wrapper.id = 'msg-' + msg.id;
@@ -813,29 +845,46 @@ function createMessageElement(msg) {
         gif.onclick = function(){ openLightbox('image', url); };
         messageEl.appendChild(gif);
     } else {
-        var textEl = document.createElement('span');
-        // Handle encrypted payloads
-        if (msg.text && msg.text.indexOf('[ENCRYPTED]') === 0) {
-            textEl.textContent = 'Encrypted message (click to decrypt)';
-            textEl.style.cursor = 'pointer';
-            textEl.style.textDecoration = 'underline';
-            textEl.onclick = function() {
-                // ask server to decrypt
-                var fd = new FormData();
-                fd.append('payload', msg.text.substring(11));
-                fetch('/chat/decrypt', { method: 'POST', body: fd }).then(r => r.json()).then(data => {
-                    if (data.status === 'success') {
-                        textEl.textContent = data.result;
-                    } else {
-                        textEl.textContent = 'Encrypted message (cannot decrypt)';
-                    }
-                }).catch(()=>{ textEl.textContent = 'Encrypted message (error)'; });
-            };
-        } else {
-            textEl.textContent = msg.text;
+            var textEl = document.createElement('span');
+            // Handle encrypted payloads
+            if (msg.text && msg.text.indexOf('[ENCRYPTED]') === 0) {
+                textEl.textContent = 'Encrypted message (click to decrypt)';
+                textEl.style.cursor = 'pointer';
+                textEl.style.textDecoration = 'underline';
+                textEl.onclick = function() {
+                    // ask server to decrypt
+                    var fd = new FormData();
+                    // send the encrypted token (after the prefix)
+                    fd.append('payload', encodeURIComponent(msg.text.substring(11)));
+                    fetch('/chat/decrypt', { method: 'POST', body: fd }).then(r => r.json()).then(data => {
+                        if (data.status === 'success') {
+                            textEl.textContent = data.result;
+                        } else {
+                            textEl.textContent = 'Encrypted message (cannot decrypt)';
+                        }
+                    }).catch(()=>{ textEl.textContent = 'Encrypted message (error)'; });
+                };
+            } else if (msg.text && /^[.\- \/]+$/.test(msg.text)) {
+                // Morse-like content: allow click-to-decode via /code endpoint
+                textEl.textContent = 'Morse code (click to decode)';
+                textEl.style.cursor = 'pointer';
+                textEl.style.textDecoration = 'underline';
+                textEl.onclick = function() {
+                    var fd = new FormData();
+                    fd.append('textInput', msg.text);
+                    fetch('/code', { method: 'POST', body: fd }).then(r => r.json()).then(data => {
+                        if (data.status === 'success') {
+                            textEl.textContent = data.result;
+                        } else {
+                            textEl.textContent = 'Unable to decode';
+                        }
+                    }).catch(()=>{ textEl.textContent = 'Decode error'; });
+                };
+            } else {
+                textEl.textContent = msg.text;
+            }
+            messageEl.appendChild(textEl);
         }
-        messageEl.appendChild(textEl);
-    }
 
     // Actions
     var actions = document.createElement('div');
@@ -1011,15 +1060,15 @@ window.addEventListener('click', function(e){ if (e.target == lightbox) lightbox
 // --- Matrix Background ---
 var canvas = document.getElementById('matrix-canvas'); var ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-// removed raw backtick character from letters to avoid parser issues in some environments
-var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|]}' .split('');
+// Use Japanese + Latin characters for matrix
+var letters = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズヅブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
 var fontSize = 22, columns = canvas.width / fontSize;
 var drops = Array(Math.floor(columns)).fill(1);
 function drawMatrix() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     var themeColor = getComputedStyle(document.body).getPropertyValue('--primary-color');
     ctx.fillStyle = themeColor;
-    ctx.font = fontSize + 'px monospace';
+    ctx.font = fontSize + "px 'Noto Sans JP', monospace";
     for (var i = 0; i < drops.length; i++) {
         var text = letters[Math.floor(Math.random() * letters.length)];
         ctx.fillText(text, i * fontSize, drops[i] * fontSize);

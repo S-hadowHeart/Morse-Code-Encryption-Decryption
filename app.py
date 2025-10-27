@@ -6,6 +6,7 @@ import random
 import uuid
 import hashlib
 import requests
+import urllib.parse
 from functools import wraps
 from werkzeug.utils import secure_filename
 from flask import Flask, jsonify, render_template, request, send_from_directory, session
@@ -219,8 +220,10 @@ def chat_decrypt():
     if not payload:
         return jsonify({'status': 'error', 'message': 'Missing payload.'})
     try:
+        # payload may be percent-encoded from the client, normalize it
+        payload_clean = urllib.parse.unquote_plus(payload)
         # payload should be the URL-safe base64 string produced by Fernet
-        decrypted = decrypt_message(payload.encode())
+        decrypted = decrypt_message(payload_clean.encode())
         if decrypted is None:
             return jsonify({'status': 'error', 'message': 'Decryption failed.'})
         return jsonify({'status': 'success', 'result': decrypted})
