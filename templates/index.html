@@ -16,6 +16,9 @@
             --primary-light: rgba(138, 43, 226, 0.1);
             --primary-medium: rgba(138, 43, 226, 0.3);
             --primary-dark: #6B24B2;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             
             /* High contrast mode variables */
             --hc-background: #000000;
@@ -422,22 +425,40 @@
             flex-direction: column; 
             height: 100vh; 
             width: 100%; 
+            max-width: 1200px;
+            margin: 0 auto;
             position: fixed; 
             top: 0; 
-            left: 0; 
-            background: var(--background-color); 
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             z-index: 1000; 
-            padding: 20px; 
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
         }
 
         @media (max-width: 600px) {
             #chat-ui-container {
-                padding: 10px;
+                width: 100%;
+                padding: 0;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                transform: none;
+                border: none;
             }
             
             #messages {
-                margin-bottom: 120px;
-                max-height: calc(100vh - 200px);
+                margin: 70px 10px 80px 10px;
+                max-height: calc(100vh - 150px);
+                background: var(--glass-bg);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid var(--glass-border);
             }
             
             #message-form {
@@ -445,10 +466,26 @@
                 bottom: 0;
                 left: 0;
                 right: 0;
-                background: var(--background-color);
-                padding: 10px;
-                gap: 5px;
+                background: var(--glass-bg);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                padding: 15px;
+                gap: 8px;
                 z-index: 1002;
+                border-top: 1px solid var(--glass-border);
+                display: flex;
+                align-items: center;
+            }
+            
+            #message-form button {
+                padding: 10px 15px;
+                height: 44px;
+            }
+            
+            #message-input {
+                height: 44px;
+                font-size: 16px;
+                padding: 10px 15px;
             }
             
             #chat-header {
@@ -456,29 +493,56 @@
                 top: 0;
                 left: 0;
                 right: 0;
-                background: var(--background-color);
+                background: var(--glass-bg);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
                 z-index: 1001;
                 margin: 0;
-                padding: 10px;
-                border-radius: 0;
+                padding: 15px;
+                border-bottom: 1px solid var(--glass-border);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
             
             .message {
                 max-width: 85%;
                 font-size: 14px;
+                background: var(--glass-bg);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
             }
             
             .message img, .message video {
                 max-width: 85vw !important;
+                border-radius: 8px;
             }
             
             #gif-picker {
                 height: 50vh;
                 bottom: 60px;
+                background: var(--glass-bg);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
             }
             
             #gif-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            
+            #gif-search {
+                margin: 10px;
+                width: calc(100% - 20px);
+                height: 44px;
+                font-size: 16px;
+                padding: 10px 15px;
+            }
+            
+            .gif-item {
+                border-radius: 8px;
+                overflow: hidden;
+                background: var(--glass-bg);
             }
         }
         
@@ -910,7 +974,8 @@ function startChatSession(room, agent) {
     showView(chatUiContainer); 
     loadMessages(true); 
     if (chatInterval) clearInterval(chatInterval); 
-    chatInterval = setInterval(loadMessages, 2500); 
+    // Increase polling interval to avoid rate limiting
+    chatInterval = setInterval(loadMessages, 5000); 
 }
 
 function loadMessages(isInitialLoad) {
