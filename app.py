@@ -28,7 +28,28 @@ limiter = Limiter(
 UPLOAD_FOLDER = 'uploads'
 CHAT_DIR = "chats"
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-ENCRYPTION_KEY = Fernet.generate_key()
+KEY_FILE = 'fernet.key'
+# Prefer an explicit env var for the key so encrypted payloads survive restarts in deployments.
+env_key = os.environ.get('FERNET_KEY') or os.environ.get('ENCRYPTION_KEY')
+if env_key:
+    if isinstance(env_key, str):
+        ENCRYPTION_KEY = env_key.encode()
+    else:
+        ENCRYPTION_KEY = env_key
+else:
+    # Try to load from disk, otherwise generate and persist to KEY_FILE
+    if os.path.exists(KEY_FILE):
+        with open(KEY_FILE, 'rb') as kf:
+            ENCRYPTION_KEY = kf.read().strip()
+    else:
+        ENCRYPTION_KEY = Fernet.generate_key()
+        try:
+            with open(KEY_FILE, 'wb') as kf:
+                kf.write(ENCRYPTION_KEY)
+        except Exception:
+            # Non-fatal: if we can't persist, keep key in-memory
+            pass
+
 cipher_suite = Fernet(ENCRYPTION_KEY)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

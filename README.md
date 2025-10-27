@@ -51,6 +51,26 @@ To run the application locally:
 
 5. Open your web browser and visit [http://127.0.0.1:10000](http://127.0.0.1:10000) to access the Morse Code Fun web app.
 
+## Notes for developers
+
+- Persistent encryption key: The app now persists a Fernet key to `fernet.key` in the project root (or uses the `FERNET_KEY` / `ENCRYPTION_KEY` environment variable if provided). This ensures encrypted chat messages can be decrypted after the server restarts. If you want ephemeral keys, delete `fernet.key` before starting the server.
+
+- Running quick smoke tests:
+
+  1. Ensure the server is running on port 10000 (default):
+
+     ```powershell
+     python .\app.py
+     ```
+
+  2. In another shell, run the smoke tests:
+
+     ```powershell
+     python .\tests\test_smoke.py
+     ```
+
+  The smoke test will exercise `/code` and `/chat/create` and report simple pass/fail output.
+
 ## Connect with Me
 
 - [LinkedIn](https://lnkd.in/d5dA7dEn)
