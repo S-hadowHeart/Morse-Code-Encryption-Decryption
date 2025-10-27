@@ -16,8 +16,8 @@
             --primary-light: rgba(138, 43, 226, 0.1);
             --primary-medium: rgba(138, 43, 226, 0.3);
             --primary-dark: #6B24B2;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(40, 20, 60, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.13);
             --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             
             /* High contrast mode variables */
@@ -83,20 +83,23 @@
             opacity: 0.3;
         }
 
-        .container { 
-            text-align: center; 
-            background-color: var(--container-bg); 
+        .container {
+            text-align: center;
+            background: var(--glass-bg);
             padding: clamp(20px, 5vw, 40px);
-            border-radius: 20px; 
-            border: 1px solid var(--border-color); 
-            box-shadow: 0 0 50px var(--shadow-color),
-                       0 0 100px var(--shadow-color),
-                       inset 0 0 20px var(--primary-light); 
-            width: min(95%, 800px);
-            position: relative; 
+            border-radius: 24px;
+            border: 1.5px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            width: min(98vw, 480px);
+            max-width: 98vw;
+            position: relative;
             transition: all 0.5s;
-            backdrop-filter: blur(10px);
-            margin: 20px auto;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            margin: 32px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .floating-nav {
@@ -420,23 +423,22 @@
             100% { transform: scale(1); }
         }
         #morse-container, #chat-login-container { display: block; }
-        #chat-ui-container { 
-            display: none; 
-            flex-direction: column; 
-            height: 100vh; 
-            width: 100%; 
-            max-width: 1200px;
+        #chat-ui-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 70vh;
+            width: 100%;
+            max-width: 480px;
             margin: 0 auto;
-            position: fixed; 
-            top: 0; 
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--glass-bg); 
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            z-index: 1000; 
-            padding: 20px;
-            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            z-index: 1000;
+            padding: 0;
+            border-radius: 24px;
+            border: 1.5px solid var(--glass-border);
             box-shadow: var(--glass-shadow);
         }
 
@@ -626,15 +628,17 @@
             70% { box-shadow: 0 0 0 10px rgba(0, 255, 178, 0); }
             100% { box-shadow: 0 0 0 0 rgba(0, 255, 178, 0); }
         }
-        #chat-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 15px 20px; 
-            border-bottom: 1px solid var(--border-color);
-            background: var(--surface-1);
-            border-radius: 12px 12px 0 0;
-            margin: -20px -20px 15px -20px;
+        #chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 24px;
+            border-bottom: 1.5px solid var(--glass-border);
+            background: var(--glass-bg);
+            border-radius: 24px 24px 0 0;
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         @media (max-width: 600px) {
@@ -644,18 +648,20 @@
             }
         }
 
-        #messages { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-            border: 1px solid var(--border-color); 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            margin: 15px 0;
-            background: var(--surface-1);
-            border-radius: 12px;
+        #messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1.5px solid var(--glass-border);
+            padding: 18px 12px;
+            display: flex;
+            flex-direction: column;
+            margin: 0 0 12px 0;
+            background: var(--glass-bg);
+            border-radius: 0 0 24px 24px;
             min-height: 300px;
-            max-height: 60vh;
+            max-height: 50vh;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         #messages::-webkit-scrollbar { 
@@ -770,7 +776,7 @@
         .emoji { cursor: pointer; font-size: 1.2em; padding: 2px; }
         #reply-preview { display: none; padding: 8px 15px; margin-top: 10px; border-top: 1px solid var(--border-color); text-align: left; position: relative; }
         #cancel-reply { position: absolute; top: 5px; right: 5px; background: none; border: none; color: white; cursor: pointer; font-size: 16px; }
-        #message-form { display: flex; gap: 5px; }
+    #message-form { display: flex; gap: 8px; width: 100%; justify-content: center; align-items: center; padding: 16px 0 8px 0; background: var(--glass-bg); border-radius: 0 0 24px 24px; box-sizing: border-box; }
         #message-input { 
             flex-grow: 1; 
             transition: all 0.3s ease;
@@ -923,21 +929,21 @@ document.getElementById('code-form').addEventListener('submit', function(e) {
         resultDisplay.innerHTML = '';
     } else if (lowerInput === 'guide') {
         window.location.href = '/guide';
-    } else {
-        var formData = new FormData();
-        formData.append('textInput', textToSend);
-        fetch('/code', {
-                method: 'POST',
-                body: formData
-            })
-            .then(function(res) {
-                return res.json();
-            })
-            .then(function(data) {
-                resultDisplay.textContent = data.status === 'success' ? data.result : data.message;
-            })
-            .catch(function() {
-                resultDisplay.textContent = 'Error: Could not connect to system.';
+        .message {
+            padding: 10px 14px;
+            border-radius: 14px;
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+            opacity: 0;
+            animation: glitchIn 0.4s forwards;
+            text-align: left;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(8px);
+            border: 1.5px solid var(--glass-border);
+            background: var(--glass-bg);
+        }
             });
     }
 });
