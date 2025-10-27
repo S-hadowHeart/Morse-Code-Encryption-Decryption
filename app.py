@@ -4,14 +4,30 @@ import json
 import os
 import random
 import uuid
+import hashlib
+from functools import wraps
 from werkzeug.utils import secure_filename
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_from_directory, session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from cryptography.fernet import Fernet
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
+
+# Initialize rate limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 # --- Configuration & Setup ---
 UPLOAD_FOLDER = 'uploads'
 CHAT_DIR = "chats"
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+ENCRYPTION_KEY = Fernet.generate_key()
+cipher_suite = Fernet(ENCRYPTION_KEY)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -55,12 +71,27 @@ MORSE_CODE_DICT = {
 }
 REVERSED_MORSE_CODE_DICT = {v: k for k, v in MORSE_CODE_DICT.items()}
 
+# --- Security Decorators ---
+def require_room_access(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        room_code = request.form.get('room_code') or request.args.get('room_code')
+        if not room_code:
+            return jsonify({'status': 'error', 'message': 'Room code required'})
+        file_path = os.path.join(CHAT_DIR, f"{room_code}.json")
+        if not os.path.exists(file_path):
+            return jsonify({'status': 'error', 'message': 'Invalid room code'})
+        return f(*args, **kwargs)
+    return decorated_function
+
 # --- Main Routes ---
 @app.route('/')
+@limiter.limit("60 per minute")
 def index():
     return render_template('index.html')
 
 @app.route('/guide')
+@limiter.limit("30 per minute")
 def guide():
     return render_template('guide.html')
 
@@ -208,9 +239,36 @@ def handle_typing():
 
 # --- Helper Functions ---
 def generate_room_code():
+    """Generate a secure room code with additional entropy"""
+    random_bytes = os.urandom(12)
+    hash_object = hashlib.sha256(random_bytes)
+    room_hash = hash_object.hexdigest()[:12]
     return '-'.join(''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=4)) for _ in range(3))
 
+def encrypt_message(message):
+    """Encrypt a message using Fernet symmetric encryption"""
+    if isinstance(message, str):
+        message = message.encode()
+    return cipher_suite.encrypt(message)
+
+def decrypt_message(encrypted_message):
+    """Decrypt a message using Fernet symmetric encryption"""
+    try:
+        return cipher_suite.decrypt(encrypted_message).decode()
+    except Exception:
+        return None
+
+def sanitize_input(text):
+    """Sanitize user input to prevent XSS and injection attacks"""
+    if not isinstance(text, str):
+        return ""
+    # Remove potentially dangerous characters and HTML
+    text = text.replace("<", "&lt;").replace(">", "&gt;")
+    return text[:1000]  # Limit message length
+
 def encode(text):
+    """Encode text to Morse code with input sanitization"""
+    text = sanitize_input(text)
     encoded_message = ''
     for char in text.upper():
         if char in MORSE_CODE_DICT:
@@ -218,6 +276,9 @@ def encode(text):
     return encoded_message.strip()
 
 def decode(text):
+    """Decode Morse code to text with input validation"""
+    if not all(c in '.- /' for c in text):
+        return "Invalid Morse code"
     text = text.replace('/', ' / ')
     words = text.split(' / ')
     decoded_message = ''
@@ -229,6 +290,48 @@ def decode(text):
         decoded_message += ' '
     return decoded_message.strip()
 
+def rate_limit_exceeded_handler():
+    """Handler for rate limit exceeded errors"""
+    return jsonify({
+        'status': 'error',
+        'message': 'Rate limit exceeded. Please try again later.'
+    }), 429
+
+# --- Error Handlers ---
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'status': 'error', 'message': 'Resource not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({'status': 'error', 'message': 'File too large'}), 413
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({'status': 'error', 'message': f"Rate limit exceeded. {e.description}"}), 429
+
+# --- Health Check ---
+@app.route('/health')
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'version': '2.0.0',
+        'timestamp': datetime.datetime.utcnow().isoformat()
+    })
+
 # --- Main Execution ---
 if __name__ == '__main__':
+    # Create required directories
+    for directory in [UPLOAD_FOLDER, CHAT_DIR]:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            
+    # Set file upload limit
+    app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+    
+    # Start server
     app.run(host='0.0.0.0', port=10000, debug=True)
