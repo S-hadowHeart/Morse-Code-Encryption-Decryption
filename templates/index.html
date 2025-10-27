@@ -929,22 +929,6 @@ document.getElementById('code-form').addEventListener('submit', function(e) {
         resultDisplay.innerHTML = '';
     } else if (lowerInput === 'guide') {
         window.location.href = '/guide';
-        .message {
-            padding: 10px 14px;
-            border-radius: 14px;
-            max-width: 80%;
-            word-wrap: break-word;
-            position: relative;
-            opacity: 0;
-            animation: glitchIn 0.4s forwards;
-            text-align: left;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--glass-shadow);
-            backdrop-filter: blur(8px);
-            border: 1.5px solid var(--glass-border);
-            background: var(--glass-bg);
-        }
-            });
     }
 });
 document.getElementById('back-to-morse').addEventListener('click', function(){ showView(morseContainer); });
