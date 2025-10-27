@@ -417,19 +417,84 @@
             100% { transform: scale(1); }
         }
         #morse-container, #chat-login-container { display: block; }
-        #chat-ui-container { display: none; flex-direction: column; height: 100vh; width:100%; position: fixed; top: 0; left: 0; background: var(--background-color); z-index: 1000; padding: 20px; }
+        #chat-ui-container { 
+            display: none; 
+            flex-direction: column; 
+            height: 100vh; 
+            width: 100%; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            background: var(--background-color); 
+            z-index: 1000; 
+            padding: 20px; 
+        }
+
+        @media (max-width: 600px) {
+            #chat-ui-container {
+                padding: 10px;
+            }
+            
+            #messages {
+                margin-bottom: 120px;
+                max-height: calc(100vh - 200px);
+            }
+            
+            #message-form {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: var(--background-color);
+                padding: 10px;
+                gap: 5px;
+                z-index: 1002;
+            }
+            
+            #chat-header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: var(--background-color);
+                z-index: 1001;
+                margin: 0;
+                padding: 10px;
+                border-radius: 0;
+            }
+            
+            .message {
+                max-width: 85%;
+                font-size: 14px;
+            }
+            
+            .message img, .message video {
+                max-width: 85vw !important;
+            }
+            
+            #gif-picker {
+                height: 50vh;
+                bottom: 60px;
+            }
+            
+            #gif-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
         #gif-picker {
             display: none;
             position: fixed;
             bottom: 80px;
             left: 0;
             width: 100%;
-            background: var(--surface-1);
+            background: var(--background-color);
             border-top: 1px solid var(--border-color);
             padding: 15px;
             z-index: 1001;
             max-height: 50vh;
             overflow-y: auto;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
         }
         #gif-search {
             width: 100%;
@@ -747,31 +812,10 @@
     </div>
     <div id="lightbox"><span id="lightbox-close">&times;</span><div id="lightbox-container"></div></div>
     <div id="emoji-picker"></div>
-    <div id="chat-ui-container">
-        <div id="chat-header">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span id="room-display" style="cursor: pointer;" title="Click to copy"></span>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button id="export-chat" class="copy-btn">💾 Export</button>
-                <button id="leave-room">Leave</button>
-            </div>
-        </div>
-        <div id="messages"></div>
-        <div id="typing-indicator"></div>
-        <div id="reply-preview"><p>Replying to <b id="reply-agent"></b></p><span id="reply-text"></span><button id="cancel-reply">X</button></div>
-        <div id="gif-picker">
-            <input type="text" id="gif-search" placeholder="Search GIFs...">
-            <div id="gif-grid"></div>
-            <div id="gif-loading">Loading GIFs...</div>
-        </div>
-        <form id="message-form">
-            <button type="button" id="attach-file-button">+</button>
-            <button type="button" id="gif-button" style="font-size: 18px;">🎞️</button>
-            <input type="file" id="file-input" style="display: none;" accept="image/*,video/*">
-            <input type="text" id="message-input" placeholder="Send a message...">
-            <button type="submit">Send</button>
-        </form>
+    <div id="gif-picker">
+        <input type="text" id="gif-search" placeholder="Search GIFs...">
+        <div id="gif-grid"></div>
+        <div id="gif-loading">Loading GIFs...</div>
     </div>
 
 <script>
@@ -1392,38 +1436,6 @@ document.getElementById('gif-button').addEventListener('click', function() {
     } else {
         // Hide GIF picker
         gifPicker.style.display = 'none';
-    }
-});
-    const gifPicker = document.getElementById('gif-picker');
-    const currentDisplay = gifPicker.style.display;
-    
-    // Toggle GIF picker
-    gifPicker.style.display = currentDisplay === 'none' ? 'block' : 'none';
-    
-    // Show trending GIFs initially
-    if (currentDisplay === 'none') {
-        fetch(`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${GIF_LIMIT}&rating=g`)
-            .then(response => response.json())
-            .then(data => {
-                const gifGrid = document.getElementById('gif-grid');
-                gifGrid.innerHTML = '';
-                data.data.forEach(gif => {
-                    const item = document.createElement('div');
-                    item.className = 'gif-item';
-                    
-                    const img = document.createElement('img');
-                    img.src = gif.images.fixed_height_small.url;
-                    img.loading = 'lazy';
-                    
-                    item.onclick = () => {
-                        sendGifMessage(gif.images.original.url);
-                        gifPicker.style.display = 'none';
-                    };
-                    
-                    item.appendChild(img);
-                    gifGrid.appendChild(item);
-                });
-            });
     }
 });
 
