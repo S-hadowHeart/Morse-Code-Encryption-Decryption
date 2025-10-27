@@ -417,7 +417,49 @@
             100% { transform: scale(1); }
         }
         #morse-container, #chat-login-container { display: block; }
-        #chat-ui-container { display: none; flex-direction: column; height: 80vh; width:100%; }
+        #chat-ui-container { display: none; flex-direction: column; height: 100vh; width:100%; position: fixed; top: 0; left: 0; background: var(--background-color); z-index: 1000; padding: 20px; }
+        #gif-picker {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            width: 100%;
+            background: var(--surface-1);
+            border-top: 1px solid var(--border-color);
+            padding: 15px;
+            z-index: 1001;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        #gif-search {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--surface-2);
+            color: var(--text-color);
+        }
+        #gif-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .gif-item {
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .gif-item:hover {
+            transform: scale(1.05);
+        }
+        .gif-item img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
         #result-display { 
             margin-top: 25px; 
             min-height: 24px; 
@@ -705,10 +747,31 @@
     </div>
     <div id="lightbox"><span id="lightbox-close">&times;</span><div id="lightbox-container"></div></div>
     <div id="emoji-picker"></div>
-    <div id="gif-picker">
-        <input type="text" id="gif-search" placeholder="Search GIFs...">
-        <div id="gif-grid"></div>
-        <div id="gif-loading">Loading GIFs...</div>
+    <div id="chat-ui-container">
+        <div id="chat-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="room-display" style="cursor: pointer;" title="Click to copy"></span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="export-chat" class="copy-btn">💾 Export</button>
+                <button id="leave-room">Leave</button>
+            </div>
+        </div>
+        <div id="messages"></div>
+        <div id="typing-indicator"></div>
+        <div id="reply-preview"><p>Replying to <b id="reply-agent"></b></p><span id="reply-text"></span><button id="cancel-reply">X</button></div>
+        <div id="gif-picker">
+            <input type="text" id="gif-search" placeholder="Search GIFs...">
+            <div id="gif-grid"></div>
+            <div id="gif-loading">Loading GIFs...</div>
+        </div>
+        <form id="message-form">
+            <button type="button" id="attach-file-button">+</button>
+            <button type="button" id="gif-button" style="font-size: 18px;">🎞️</button>
+            <input type="file" id="file-input" style="display: none;" accept="image/*,video/*">
+            <input type="text" id="message-input" placeholder="Send a message...">
+            <button type="submit">Send</button>
+        </form>
     </div>
 
 <script>
@@ -786,7 +849,25 @@ window.addEventListener('keydown', function(e) {
 document.getElementById('create-room').addEventListener('click', function(){ fetch('/chat/create', { method: 'POST' }).then(function(res){ return res.json(); }).then(function(data){ if(data.status==='success') startChatSession(data.room_code, data.agent_name); }); });
 document.getElementById('join-room').addEventListener('click', function(){ var roomCode = document.getElementById('room-code-input').value; if(roomCode) { var fd = new FormData(); fd.append('room_code', roomCode); fetch('/chat/join', { method: 'POST', body: fd }).then(function(res){ return res.json(); }).then(function(data){ if(data.status==='success') startChatSession(roomCode, data.agent_name); else alert(data.message); }); } });
 document.getElementById('leave-room').addEventListener('click', function(){ clearInterval(chatInterval); showView(chatLoginContainer); currentRoom = null; agentName = null; messagesData = []; lastTimestamp = null; messagesDiv.innerHTML = '';});
-function startChatSession(room, agent) { currentRoom = room; agentName = agent; document.getElementById('room-display').textContent = 'Room: ' + room; showView(chatUiContainer); loadMessages(true); if (chatInterval) clearInterval(chatInterval); chatInterval = setInterval(loadMessages, 2500); }
+function startChatSession(room, agent) { 
+    currentRoom = room; 
+    agentName = agent; 
+    const roomDisplay = document.getElementById('room-display');
+    roomDisplay.textContent = 'Room: ' + room; 
+    
+    // Make room code clickable to copy
+    roomDisplay.onclick = function() {
+        navigator.clipboard.writeText(room).then(function() {
+            roomDisplay.style.color = 'var(--primary-color)';
+            setTimeout(() => roomDisplay.style.color = '', 1000);
+        });
+    };
+    
+    showView(chatUiContainer); 
+    loadMessages(true); 
+    if (chatInterval) clearInterval(chatInterval); 
+    chatInterval = setInterval(loadMessages, 2500); 
+}
 
 function loadMessages(isInitialLoad) {
     if (!currentRoom) return;
@@ -1266,6 +1347,53 @@ window.addEventListener('click', function(e){ if (e.target == lightbox) lightbox
 
 // --- GIF Button Handler ---
 document.getElementById('gif-button').addEventListener('click', function() {
+    const gifPicker = document.getElementById('gif-picker');
+    const isVisible = gifPicker.style.display === 'block';
+    
+    if (!isVisible) {
+        // Show GIF picker and load trending GIFs
+        gifPicker.style.display = 'block';
+        const endpoint = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${GIF_LIMIT}&rating=g`;
+        
+        const gifGrid = document.getElementById('gif-grid');
+        const loading = document.getElementById('gif-loading');
+        
+        gifGrid.innerHTML = '';
+        loading.style.display = 'block';
+        
+        fetch(endpoint)
+            .then(response => response.json())
+            .then(data => {
+                gifGrid.innerHTML = '';
+                data.data.forEach(gif => {
+                    const item = document.createElement('div');
+                    item.className = 'gif-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = gif.images.fixed_height_small.url;
+                    img.loading = 'lazy';
+                    
+                    item.onclick = () => {
+                        sendGifMessage(gif.images.original.url);
+                        gifPicker.style.display = 'none';
+                    };
+                    
+                    item.appendChild(img);
+                    gifGrid.appendChild(item);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading trending GIFs:', error);
+                gifGrid.innerHTML = '<div style="color: var(--error-color);">Failed to load GIFs</div>';
+            })
+            .finally(() => {
+                loading.style.display = 'none';
+            });
+    } else {
+        // Hide GIF picker
+        gifPicker.style.display = 'none';
+    }
+});
     const gifPicker = document.getElementById('gif-picker');
     const currentDisplay = gifPicker.style.display;
     
